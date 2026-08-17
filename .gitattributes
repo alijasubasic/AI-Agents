@@ -1,0 +1,10 @@
+# Normalise line endings. CI runs on Linux; without this, files committed from
+# Windows can land with CRLF and break the Makefile and any shell script.
+* text=auto eol=lf
+
+# Binary files must never be touched.
+*.png binary
+*.jpg binary
+*.pdf binary
+*.xlsx binary
+*.zip binary
