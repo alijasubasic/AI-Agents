@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from core.agent import Agent
 from core.config import Settings
+from core.console import configure_stdout
 from core.llm import MockProvider, text_response, tool_response
 from core.models import RunResult
 from core.tools import ToolRegistry, tool
@@ -150,6 +151,7 @@ def scene_step_limit(settings: Settings) -> RunResult:
 
 
 def main() -> None:
+    configure_stdout()
     settings = Settings.from_env()
     print(
         f"ai-agent-portfolio core demo\n"

@@ -26,8 +26,8 @@ finished and tested; what is not here says so.
 | `core/` — agent loop, tools, providers, tracing, cost | ✅ Done |
 | [`agents/email_triage`](agents/email_triage) — classify, extract, draft, escalate | ✅ Done |
 | [`agents/calendar_booking`](agents/calendar_booking) — cross-timezone slot finding and booking | ✅ Done |
-| `agents/call-intake` | ⬜ Next |
-| `agents/lead-research` | ⬜ Planned |
+| [`agents/call_intake`](agents/call_intake) — transcript to verified record, typed delegation | ✅ Done |
+| `agents/lead-research` | ⬜ Next |
 | `agents/orchestrator` — router and result merging | ⬜ Planned |
 | `agents/knowledge-base` — RAG with citations | ⬜ Planned |
 | `agents/self-improving` — evaluator/optimizer loop | ⬜ Planned |
@@ -133,6 +133,35 @@ switched yet, so the Berlin/New York overlap widens by an hour mid-horizon —
 python -m agents.calendar_booking.demo
 ```
 
+### [call-intake](agents/call_intake) ✅
+
+Turns a phone transcript into a verified record — what the caller wanted, who
+they are, what they asked for — and, when they asked for a meeting, real
+openings fetched from the booking agent.
+
+**Nothing the model reports about the caller is believed without checking it.**
+A model reading a noisy transcript will occasionally produce a contact detail
+that sounds right and was never said, and the extraction gives no sign of which
+is which. So every detail is checked back against the caller's own words. One
+fixture is scripted to hallucinate on purpose, so the demo shows the guard
+firing rather than merely claiming it exists.
+
+**The transcript is data, never instructions.** One fixture is someone reading
+an instruction-override attempt down the phone. Three independent things stop
+it, and none relies on the model behaving: detection runs *before* the model is
+consulted, the prompt draws an explicit data boundary, and policy — not the
+model — refuses to act.
+
+**Delegation is typed.** When a meeting is wanted, this agent hands
+`calendar-booking` a `BookingRequest`, not a sentence, through an entry point
+that calls no model at all. A test proves it by asserting the booking agent's
+scripted response is still unconsumed afterwards.
+→ [ADR 0004](docs/adr/0004-typed-agent-delegation.md)
+
+```bash
+python -m agents.call_intake.demo
+```
+
 ---
 
 ## Design decisions worth arguing about
@@ -149,6 +178,10 @@ configured, which is what keeps the "clone it and run it" promise true.
 **Adaptive thinking, no sampling parameters, one price table.** Cost accounting
 is only as honest as its price source, so there is exactly one.
 → [ADR 0003](docs/adr/0003-model-selection.md)
+
+**Agents delegate through types, not prose.** A handoff between two programs
+that both speak pydantic has no reason to be re-parsed by a model.
+→ [ADR 0004](docs/adr/0004-typed-agent-delegation.md)
 
 **Tool schemas come from the code.** The `@tool` decorator derives the JSON
 schema the model sees from the function's type hints and docstring, so the
@@ -183,7 +216,7 @@ discovered in production.
 
 ```bash
 make install   # uv sync --all-extras
-make demo      # three scenes: tool use, tool failure, guardrail
+make demo      # every demo, all without an API key
 make test      # pytest with coverage
 make lint      # ruff check + format --check
 make check     # everything CI runs, in the same order

@@ -15,6 +15,7 @@ from agents.email_triage.models import TriageResult
 from agents.email_triage.providers import MockCrm, MockMailbox
 from agents.email_triage.scripted import provider_for
 from core.config import Settings
+from core.console import configure_stdout
 
 
 def route_label(result: TriageResult, sent: bool) -> str:
@@ -80,6 +81,7 @@ def _print(email_subject: str, result: TriageResult, sent: bool) -> None:
 
 
 def main() -> None:
+    configure_stdout()
     settings = Settings.from_env()
     print("email-triage demo")
     print(f"mode={settings.mode}  model={settings.model}  inbox={len(INBOX)} messages")

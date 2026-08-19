@@ -152,6 +152,24 @@ class CalendarBookingAgent:
             confirmation=self._confirmation(proposal.request.title, slot, attendees),
         )
 
+    def propose_for(self, request: BookingRequest, message: str = "") -> MeetingProposal:
+        """Offer openings for an already-structured request. No model call.
+
+        This is the entry point other agents use. When work arrives as a typed
+        `BookingRequest` there is nothing for a model to parse, so paying for
+        one would buy only the chance to misread a field that was already
+        correct. The model is needed at the human boundary, not between agents.
+        """
+        slots = self._find(request)
+        return MeetingProposal(
+            request=request,
+            slots=slots,
+            message=message
+            or (
+                self._offer_message(request, slots) if slots else self._no_options_message(request)
+            ),
+        )
+
     # -- internals -------------------------------------------------------
 
     def _build_tools(self) -> ToolRegistry:
@@ -251,4 +269,15 @@ class CalendarBookingAgent:
             f"{slot.describe_for(attendees)}\n"
             f"With: {who}\n"
             f"Duration: {slot.duration_minutes} minutes"
+        )
+
+    def _offer_message(self, request: BookingRequest, slots: list[TimeSlot]) -> str:
+        """Render an offer without a model, for agent-to-agent handoffs."""
+        attendees = self._attendees(request.attendee_emails)
+        lines = [
+            f"  {index}. {slot.describe_for(attendees)}" for index, slot in enumerate(slots, 1)
+        ]
+        return (
+            f"{request.duration_minutes} minutes for {request.title}. "
+            f"These times work for everyone:\n" + "\n".join(lines)
         )

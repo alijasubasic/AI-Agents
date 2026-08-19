@@ -149,7 +149,7 @@ class TimeSlot(BaseModel):
         """Render this slot in one attendee's time zone, for confirmations."""
         zone = ZoneInfo(timezone)
         start, end = self.start.astimezone(zone), self.end.astimezone(zone)
-        return f"{start:%a %d %b %H:%M}–{end:%H:%M} ({start:%Z})"
+        return f"{start:%a %d %b %H:%M}-{end:%H:%M} ({start:%Z})"
 
     def describe_for(self, attendees: list[Attendee]) -> str:
         """Render the slot once per distinct attendee time zone."""

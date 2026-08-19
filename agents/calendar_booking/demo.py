@@ -15,6 +15,7 @@ from agents.calendar_booking.models import BookingResult, MeetingProposal
 from agents.calendar_booking.providers import MockCalendar
 from agents.calendar_booking.scripted import REQUESTS, provider_for
 from core.config import Settings
+from core.console import configure_stdout
 
 
 def run_scenario(
@@ -71,6 +72,7 @@ def _print(scenario: str, proposal: MeetingProposal, booking: BookingResult | No
 
 
 def main() -> None:
+    configure_stdout()
     settings = Settings.from_env()
     print("calendar-booking demo")
     print(f"mode={settings.mode}  model={settings.model}")

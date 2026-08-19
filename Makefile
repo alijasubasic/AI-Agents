@@ -12,6 +12,7 @@ demo: ## Run every demo — all work with no API key and no network
 	uv run python -m core.demo
 	uv run python -m agents.email_triage.demo
 	uv run python -m agents.calendar_booking.demo
+	uv run python -m agents.call_intake.demo
 
 test: ## Run the test suite with coverage
 	uv run pytest --cov=core --cov-report=term-missing
