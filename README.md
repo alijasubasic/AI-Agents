@@ -32,7 +32,7 @@ finished and tested; what is not here says so.
 | [`console/`](console) — overlay, ElevenLabs voice, Obsidian vault | ✅ Done |
 | [`agents/knowledge_base`](agents/knowledge_base) — RAG with citations and an enforced “I don’t know” | ✅ Done |
 | [`agents/self_improving`](agents/self_improving) — evaluator/optimizer loop with a holdout | ✅ Done |
-| `agents/improver` — reviewer crew that patches this repo | ⬜ Next |
+| [`agents/improver`](agents/improver) — reviewer crew that patches this repo | ✅ Done |
 | [`evals/`](evals) — scored cases per agent, including the ones they fail | ✅ Done |
 
 ---
@@ -252,6 +252,47 @@ does not compound.
 python -m agents.self_improving.demo
 ```
 
+### [improver](agents/improver) ✅ — the reviewer crew
+
+Reviews this repository, proposes patches, and verifies them against a gate it
+cannot influence. Every applied patch is a branch. Nothing is merged.
+
+**A code-writing agent's worst failure is not writing bad code. It is writing
+bad code and adjusting whatever would have caught it.** A weakened assertion, a
+loosened lint rule, a deleted eval case — each makes the next run look cleaner
+and the repository worse, and each is a change a model can rationalise. Nothing
+about the diff looks like sabotage.
+
+So every guardrail points at the improver itself. It may never modify `tests/`,
+`evals/`, `.github/`, the build configuration, the ADRs, or **its own package**.
+Not "is instructed not to" — cannot: the check runs before anything reaches the
+workspace.
+
+The demo found a hole in exactly that rule. `normalise()` used
+`path.lstrip("./")`, and `lstrip` strips a *set of characters* rather than a
+prefix — so `.github/workflows/ci.yml` became `github/workflows/ci.yml` and CI
+configuration was unprotected. It is now a test and an eval case.
+
+Five reviewers read each file for different things, because one "review this
+file" prompt returns whatever the model noticed first. Findings whose quoted
+anchor is not actually in the file are dropped. Two reviewers on the same line
+*raises* severity rather than deduplicating away the signal. Nits are collected,
+never patched.
+
+Six gates, cheapest first: safety, scope, a regression test for any bug fix,
+`make lint`, `make test`, and the eval score. The last is the one worth
+explaining — tests say the code still works, evals say the agents still behave,
+and a patch can pass one while failing the other.
+
+```bash
+make improve              # dry run: scan, review, report
+make improve APPLY=1      # also write patches, on branches
+```
+
+A [weekly workflow](.github/workflows/improve.yml) runs the dry half and opens a
+pull request with the report. Applying patches unattended on a schedule would
+mean branches appearing in a repository nobody was watching.
+
 ### [brain](agents/brain) ✅ — the supervisor
 
 Runs every other agent, reviews what each of them decided, and writes the
@@ -350,12 +391,13 @@ and measures neither.
 | calendar-booking | 14 | 14 | 100% | 2 |
 | call-intake | 13 | 13 | 100% | 3 |
 | email-triage | 11 | 11 | 100% | 4 |
+| improver | 26 | 26 | 100% | 3 |
 | knowledge-base | 13 | 13 | 100% | 3 |
 | lead-research | 12 | 12 | 100% | 4 |
 | self-improving | 12 | 12 | 100% | 3 |
-| **overall** | **89** | **89** | **100%** | **22** |
+| **overall** | **115** | **115** | **100%** | **25** |
 
-**100% is not the interesting number. 22 known gaps is.** A `KNOWN_GAP` case
+**100% is not the interesting number. 25 known gaps is.** A `KNOWN_GAP` case
 documents a real limitation — it is kept, it fails, and it fails visibly.
 Deleting it would make the score look better and the agent no safer, so gaps
 are excluded from the headline rather than allowed to create pressure to remove

@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install demo brief overlay test lint fmt eval check clean
+.PHONY: help install demo brief overlay test lint fmt eval improve check clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -16,6 +16,7 @@ demo: ## Run every demo — all work with no API key and no network
 	uv run python -m agents.lead_research.demo
 	uv run python -m agents.knowledge_base.demo
 	uv run python -m agents.self_improving.demo
+	uv run python -m agents.improver.demo
 	uv run python -m agents.brain.demo
 	uv run python -m console.demo
 
@@ -45,3 +46,6 @@ overlay: ## Serve the live overlay on http://127.0.0.1:8787
 
 eval: ## Run the deterministic eval suite
 	uv run python -m evals
+
+improve: ## Review the repo and report a worklist (add APPLY=1 to write patches)
+	uv run python -m agents.improver $(if $(APPLY),--apply,)
