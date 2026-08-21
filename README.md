@@ -29,6 +29,7 @@ finished and tested; what is not here says so.
 | [`agents/call_intake`](agents/call_intake) — transcript to verified record, typed delegation | ✅ Done |
 | [`agents/lead_research`](agents/lead_research) — sourced facts, every claim labelled | ✅ Done |
 | [`agents/brain`](agents/brain) — supervises every agent, writes the morning brief | ✅ Done |
+| [`console/`](console) — overlay, ElevenLabs voice, Obsidian vault | ✅ Done |
 | `agents/knowledge-base` — RAG with citations | ⬜ Next |
 | `agents/self-improving` — evaluator/optimizer loop | ⬜ Planned |
 | `agents/improver` — reviewer crew that patches this repo | ⬜ Planned |
@@ -222,6 +223,46 @@ a person today — as Markdown and as a spreadsheet (`Summary`, `Decisions`,
 
 ```bash
 make brief    # or: python -m agents.brain.demo
+```
+
+---
+
+## The console
+
+### [console/](console) ✅ — overlay, voice and vault
+
+The layer a person actually looks at: a heads-up display, a spoken briefing,
+and an Obsidian vault recording every decision.
+
+**The console observes; it cannot act.** No button approves a held decision, no
+endpoint sends a blocked email — the server refuses every HTTP method except
+`GET` and `HEAD` before it looks at the path. A display with controls would be a
+second way to approve something, one that never passes through the codex and
+never lands in the audit trail. Two tests hold the line: one asserts the page
+contains no `<form>`, `<button>` or `<input>`, the other walks every mutating
+method and expects `405`.
+
+**The overlay** is one self-contained HTML file — inline CSS, inline JSON, no
+build step, no CDN. It opens from disk with the network unplugged. Decisions are
+ordered by how much attention they need, not by time. Chrome's `--app` flag
+turns it into the frameless always-on-top window.
+
+**The voice** enforces its own per-character ceiling, because ElevenLabs bills
+that way and a runaway loop would be a billing incident. Spoken and displayed
+wording are generated separately: "2 of 7 (29%)" is fine in a table and
+unintelligible aloud. Only blocks and urgent tasks are read out in detail —
+reading seven approvals aloud trains the listener to stop paying attention by
+the third, which is when the blocked one arrives.
+
+**The Obsidian vault** is the one integration here built completely rather than
+as a skeleton, because a vault is just a folder of Markdown files. Every
+decision note links to its agent, its codex articles and the day's brief, so
+opening `A2 Honesty` in Obsidian lists every decision that article has ever
+blocked. Nobody built that view; it falls out of writing the links.
+
+```bash
+make brief      # render, speak and record one day
+make overlay    # the same overlay, live on localhost
 ```
 
 

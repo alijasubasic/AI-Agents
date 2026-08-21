@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install demo brief test lint fmt check clean
+.PHONY: help install demo brief overlay test lint fmt check clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -15,6 +15,7 @@ demo: ## Run every demo — all work with no API key and no network
 	uv run python -m agents.call_intake.demo
 	uv run python -m agents.lead_research.demo
 	uv run python -m agents.brain.demo
+	uv run python -m console.demo
 
 test: ## Run the test suite with coverage
 	uv run pytest --cov=core --cov-report=term-missing
@@ -30,8 +31,12 @@ fmt: ## Auto-fix formatting and lint rules
 check: lint test demo ## Everything CI runs, in the same order
 
 clean: ## Remove caches and local run artifacts
-	rm -rf .pytest_cache .ruff_cache .coverage htmlcov traces
+	rm -rf .pytest_cache .ruff_cache .coverage htmlcov traces briefs vault
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
 brief: ## Run every agent and write the morning brief to briefs/
 	uv run python -m agents.brain.demo
+	uv run python -m console.demo
+
+overlay: ## Serve the live overlay on http://127.0.0.1:8787
+	uv run python -m console.server

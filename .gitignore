@@ -45,3 +45,6 @@ desktop.ini
 
 # --- Brain briefs (contain decision text) ---
 briefs/
+
+# --- Obsidian vault written by the console demo ---
+vault/
