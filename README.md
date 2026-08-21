@@ -30,8 +30,8 @@ finished and tested; what is not here says so.
 | [`agents/lead_research`](agents/lead_research) — sourced facts, every claim labelled | ✅ Done |
 | [`agents/brain`](agents/brain) — supervises every agent, writes the morning brief | ✅ Done |
 | [`console/`](console) — overlay, ElevenLabs voice, Obsidian vault | ✅ Done |
-| `agents/knowledge-base` — RAG with citations | ⬜ Next |
-| `agents/self-improving` — evaluator/optimizer loop | ⬜ Planned |
+| [`agents/knowledge_base`](agents/knowledge_base) — RAG with citations and an enforced “I don’t know” | ✅ Done |
+| `agents/self-improving` — evaluator/optimizer loop | ⬜ Next |
 | `agents/improver` — reviewer crew that patches this repo | ⬜ Planned |
 | [`evals/`](evals) — scored cases per agent, including the ones they fail | ✅ Done |
 
@@ -186,6 +186,39 @@ should rely on.
 python -m agents.lead_research.demo
 ```
 
+### [knowledge-base](agents/knowledge_base) ✅
+
+Answers questions from a corpus of customer documents with a citation for every
+sentence — or says honestly that the documents cannot answer.
+
+**“I don’t know” is a verdict the code reaches, not a behaviour the prompt asks
+for.** A retriever always returns something, because “least irrelevant” is the
+only thing similarity search computes. Ask a hardware-policy corpus about
+parental leave and it hands back three paragraphs on support hours; a model
+given those writes a confident, well-cited, invented answer. **That failure has
+exactly the shape of a success**, which is why the check has to happen before
+the model is consulted. For an uncovered question the model never sees the
+question at all — the refusal costs nothing.
+
+The gate turns on **separation**, not an absolute similarity floor. TF-IDF
+cosine falls as a question gets longer, so a fixed threshold punishes people
+for asking in full sentences — the first run refused a warranty question the
+corpus answers in its opening line. A real match instead shows one chunk
+clearly ahead of the field, whatever the absolute numbers.
+
+Every citation is verified against the chunk it names, with the two failure
+modes kept apart: an invented chunk id and an invented quote mean different
+things. The demo shows the second firing on a factually correct answer whose
+attribution slipped between two documents.
+
+Retrieval is lexical and the README says so: offline, exact and free, at the
+cost of missing paraphrased questions. That gap is a scored eval case, not just
+a paragraph.
+
+```bash
+python -m agents.knowledge_base.demo
+```
+
 ### [brain](agents/brain) ✅ — the supervisor
 
 Runs every other agent, reviews what each of them decided, and writes the
@@ -284,10 +317,11 @@ and measures neither.
 | calendar-booking | 14 | 14 | 100% | 2 |
 | call-intake | 13 | 13 | 100% | 3 |
 | email-triage | 11 | 11 | 100% | 4 |
+| knowledge-base | 13 | 13 | 100% | 3 |
 | lead-research | 12 | 12 | 100% | 4 |
-| **overall** | **64** | **64** | **100%** | **16** |
+| **overall** | **77** | **77** | **100%** | **19** |
 
-**100% is not the interesting number. 16 known gaps is.** A `KNOWN_GAP` case
+**100% is not the interesting number. 19 known gaps is.** A `KNOWN_GAP` case
 documents a real limitation — it is kept, it fails, and it fails visibly.
 Deleting it would make the score look better and the agent no safer, so gaps
 are excluded from the headline rather than allowed to create pressure to remove

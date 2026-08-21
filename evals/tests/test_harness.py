@@ -237,14 +237,25 @@ def test_the_logic_layer_behaves_exactly_as_declared():
 
 
 def test_the_logic_layer_covers_every_finished_agent():
-    covered = {suite.agent for suite in run(Layer.LOGIC).suites}
-    assert covered == {
-        "brain",
-        "calendar-booking",
-        "call-intake",
-        "email-triage",
-        "lead-research",
+    """No agent ships without eval cases.
+
+    The agent list is discovered from the filesystem rather than written out
+    here. A hardcoded list is the kind of thing that quietly stops matching
+    reality, and then the test that was supposed to catch a missing suite is
+    the thing that needs updating instead.
+    """
+    from pathlib import Path
+
+    agents_dir = Path(__file__).resolve().parents[2] / "agents"
+    shipped = {
+        package.name.replace("_", "-")
+        for package in agents_dir.iterdir()
+        if package.is_dir() and (package / "demo.py").exists()
     }
+    covered = {suite.agent for suite in run(Layer.LOGIC).suites}
+
+    assert shipped, "no agent packages found; the discovery path is wrong"
+    assert shipped - covered == set(), f"agents without eval cases: {shipped - covered}"
 
 
 def test_the_suite_is_registered_once_however_often_it_is_loaded():

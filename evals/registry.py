@@ -73,6 +73,7 @@ def load_all() -> list[tuple[EvalCase, CaseFn]]:
         calendar_booking,
         call_intake,
         email_triage,
+        knowledge_base,
         lead_research,
     )
 
