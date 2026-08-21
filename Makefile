@@ -15,6 +15,7 @@ demo: ## Run every demo — all work with no API key and no network
 	uv run python -m agents.call_intake.demo
 	uv run python -m agents.lead_research.demo
 	uv run python -m agents.knowledge_base.demo
+	uv run python -m agents.self_improving.demo
 	uv run python -m agents.brain.demo
 	uv run python -m console.demo
 

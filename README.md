@@ -31,8 +31,8 @@ finished and tested; what is not here says so.
 | [`agents/brain`](agents/brain) — supervises every agent, writes the morning brief | ✅ Done |
 | [`console/`](console) — overlay, ElevenLabs voice, Obsidian vault | ✅ Done |
 | [`agents/knowledge_base`](agents/knowledge_base) — RAG with citations and an enforced “I don’t know” | ✅ Done |
-| `agents/self-improving` — evaluator/optimizer loop | ⬜ Next |
-| `agents/improver` — reviewer crew that patches this repo | ⬜ Planned |
+| [`agents/self_improving`](agents/self_improving) — evaluator/optimizer loop with a holdout | ✅ Done |
+| `agents/improver` — reviewer crew that patches this repo | ⬜ Next |
 | [`evals/`](evals) — scored cases per agent, including the ones they fail | ✅ Done |
 
 ---
@@ -219,6 +219,39 @@ a paragraph.
 python -m agents.knowledge_base.demo
 ```
 
+### [self-improving](agents/self_improving) ✅
+
+An evaluator-optimizer loop: a critic reads what a prompt got wrong, an
+optimizer rewrites it, and a gate decides whether the rewrite was actually
+better.
+
+**A self-improving loop is easy to build and easy to build wrong.** The wrong
+version measures the rewrite on the same examples it was shown, watches the
+number rise, and reports success — having learned those examples. So the cases
+are split: the optimizer sees a **tuning** half, and acceptance is decided on a
+**holdout** it never sees. A task with no holdout cannot be constructed at all.
+
+The demo run says it plainly:
+
+```
+v1   75% tuning /  75% holdout   ACCEPTED
+v2  100% tuning /  75% holdout   rejected — the prompt learned the examples
+v3  100% tuning /  50% holdout   rejected — regression, rolled back
+```
+
+**v2 is the version this design exists for.** It would have looked like the
+best of the run. Looking at what the optimizer wrote makes it obvious: v1
+stated a *rule* about when money is committed; v2 listed the *situations it had
+seen*. Both score 100% on tuning; only one knows what to do with a message
+nobody showed it.
+
+A rejected version is not built on — hill climbing with rollback, so a bad step
+does not compound.
+
+```bash
+python -m agents.self_improving.demo
+```
+
 ### [brain](agents/brain) ✅ — the supervisor
 
 Runs every other agent, reviews what each of them decided, and writes the
@@ -319,9 +352,10 @@ and measures neither.
 | email-triage | 11 | 11 | 100% | 4 |
 | knowledge-base | 13 | 13 | 100% | 3 |
 | lead-research | 12 | 12 | 100% | 4 |
-| **overall** | **77** | **77** | **100%** | **19** |
+| self-improving | 12 | 12 | 100% | 3 |
+| **overall** | **89** | **89** | **100%** | **22** |
 
-**100% is not the interesting number. 19 known gaps is.** A `KNOWN_GAP` case
+**100% is not the interesting number. 22 known gaps is.** A `KNOWN_GAP` case
 documents a real limitation — it is kept, it fails, and it fails visibly.
 Deleting it would make the score look better and the agent no safer, so gaps
 are excluded from the headline rather than allowed to create pressure to remove
