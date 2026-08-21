@@ -27,8 +27,8 @@ finished and tested; what is not here says so.
 | [`agents/email_triage`](agents/email_triage) — classify, extract, draft, escalate | ✅ Done |
 | [`agents/calendar_booking`](agents/calendar_booking) — cross-timezone slot finding and booking | ✅ Done |
 | [`agents/call_intake`](agents/call_intake) — transcript to verified record, typed delegation | ✅ Done |
-| `agents/lead-research` | ⬜ Next |
-| `agents/orchestrator` — router and result merging | ⬜ Planned |
+| [`agents/lead_research`](agents/lead_research) — sourced facts, every claim labelled | ✅ Done |
+| `agents/orchestrator` — router and result merging | ⬜ Next |
 | `agents/knowledge-base` — RAG with citations | ⬜ Planned |
 | `agents/self-improving` — evaluator/optimizer loop | ⬜ Planned |
 | `agents/improver` — reviewer crew that patches this repo | ⬜ Planned |
@@ -160,6 +160,29 @@ scripted response is still unconsumed afterwards.
 
 ```bash
 python -m agents.call_intake.demo
+```
+
+### [lead-research](agents/lead_research) ✅
+
+Researches a company, extracts structured facts with citations, and labels every
+claim by how well the retrieved documents actually support it.
+
+**Research is the easiest task here to fake convincingly.** Ask a model about a
+company and it produces a tidy profile whether or not it read anything — a
+plausible headcount is exactly as cheap to generate as a real one, and the
+output looks identical either way. So the unit of output is a *fact with a
+citation*, and [`verification.py`](agents/lead_research/verification.py) checks
+each quote against the document it was attributed to.
+
+Five labels: `VERIFIED`, `UNSOURCED`, `MISATTRIBUTED`, `DISPUTED`, `STALE`. Only
+the first means "we found this written down". The demo corpus trips **all five**
+— in the Kestrel profile, 2 of 7 claims survive. Two of the failures are
+scripted on purpose: an invented CEO citation and an unsourced revenue figure,
+because a labelling system whose failure paths have never run is one nobody
+should rely on.
+
+```bash
+python -m agents.lead_research.demo
 ```
 
 ---
