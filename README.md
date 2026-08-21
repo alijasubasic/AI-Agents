@@ -28,8 +28,8 @@ finished and tested; what is not here says so.
 | [`agents/calendar_booking`](agents/calendar_booking) — cross-timezone slot finding and booking | ✅ Done |
 | [`agents/call_intake`](agents/call_intake) — transcript to verified record, typed delegation | ✅ Done |
 | [`agents/lead_research`](agents/lead_research) — sourced facts, every claim labelled | ✅ Done |
-| `agents/orchestrator` — router and result merging | ⬜ Next |
-| `agents/knowledge-base` — RAG with citations | ⬜ Planned |
+| [`agents/brain`](agents/brain) — supervises every agent, writes the morning brief | ✅ Done |
+| `agents/knowledge-base` — RAG with citations | ⬜ Next |
 | `agents/self-improving` — evaluator/optimizer loop | ⬜ Planned |
 | `agents/improver` — reviewer crew that patches this repo | ⬜ Planned |
 | `evals/` — scored test cases per agent | ⬜ Planned |
@@ -185,6 +185,46 @@ should rely on.
 python -m agents.lead_research.demo
 ```
 
+### [brain](agents/brain) ✅ — the supervisor
+
+Runs every other agent, reviews what each of them decided, and writes the
+morning brief.
+
+**The brain can only ever be more conservative than the agent it supervises.**
+An oversight layer that can also *approve* is not oversight — the moment it
+talks itself past a guard that fired for good reason, the system is less safe
+with supervision than without. So `Verdict` is an ordered enum and every
+reviewer's opinion combines with `max()`. Nothing in the chain can lower what
+another link raised, and the property is checked exhaustively rather than
+promised in a prompt.
+→ [ADR 0005](docs/adr/0005-monotonic-supervision.md)
+
+**The codex is executable, not a prompt.** Eight articles in
+[`codex.py`](agents/brain/codex.py) — human authority, honesty, no unbacked
+commitments, confirmed recipient, data minimisation, fair dealing, cost
+discipline, auditability. Dishonesty and unconfirmed recipients block a
+decision outright; the rest hold it for a person, because most of what they
+catch is a draft needing an edit.
+
+**The chains close.** `lead-research` labels a revenue figure `UNSOURCED`; an
+outreach draft repeats it to the prospect as fact; **A2 blocks the send**.
+`call-intake` establishes a caller never spoke the address the model extracted;
+a follow-up is drafted to it anyway; **A4 blocks the send**. Neither specialist
+did anything wrong, and neither could have caught it alone.
+
+**The model earns its place once.** A scheduling reply breaches no article, and
+the reviewer holds it anyway: the draft names a specific time before anyone
+checked the calendar. No rule could see that.
+
+The morning brief answers two questions — what happened yesterday, what needs
+a person today — as Markdown and as a spreadsheet (`Summary`, `Decisions`,
+`Tasks today`, `Codex findings`).
+
+```bash
+make brief    # or: python -m agents.brain.demo
+```
+
+
 ---
 
 ## Design decisions worth arguing about
@@ -205,6 +245,10 @@ is only as honest as its price source, so there is exactly one.
 **Agents delegate through types, not prose.** A handoff between two programs
 that both speak pydantic has no reason to be re-parsed by a model.
 → [ADR 0004](docs/adr/0004-typed-agent-delegation.md)
+
+**Supervision may only tighten.** An oversight layer that can also approve is
+not oversight.
+→ [ADR 0005](docs/adr/0005-monotonic-supervision.md)
 
 **Tool schemas come from the code.** The `@tool` decorator derives the JSON
 schema the model sees from the function's type hints and docstring, so the

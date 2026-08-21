@@ -42,3 +42,6 @@ logs/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# --- Brain briefs (contain decision text) ---
+briefs/

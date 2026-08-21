@@ -17,10 +17,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Writing the morning brief as a real .xlsx workbook. Optional: the brief also
+# writes as CSV with no dependencies at all, which is what `make demo` uses.
+xlsx = ["openpyxl>=3.1"]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "ruff>=0.6",
+    "openpyxl>=3.1",
 ]
 
 [build-system]
