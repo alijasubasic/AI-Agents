@@ -106,7 +106,8 @@ instructions rather than as documentation for a reader.
 - **The scripted responses prove the plumbing, not the prompt.** The fixtures
   show that the loop, the tools, and the policy behave correctly given a
   well-formed classification. Whether the model *produces* good classifications
-  is a separate question that needs `evals/`, which does not exist yet.
+  is a separate question, scored in [`evals/`](../../evals) at the
+  JUDGEMENT layer — which needs a live API key.
 - **The body scan is regex over English.** It will miss paraphrases ("we'll be
   seeking legal advice" is caught, "our counsel will be in touch" is not) and it
   does not handle German, which real inbound mail here would contain. It is a

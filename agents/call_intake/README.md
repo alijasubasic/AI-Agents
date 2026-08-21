@@ -143,4 +143,5 @@ invented detail regardless of how confident the model felt.
   captures the topic but not a requested duration.
 - **The scripted responses prove the plumbing, not the prompt.** Whether the
   model actually resists a cleverly-worded transcript is an evals question, and
-  `evals/` does not exist yet.
+  a JUDGEMENT-layer question in [`evals/`](../../evals), and that layer
+  needs a live API key.

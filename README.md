@@ -33,7 +33,7 @@ finished and tested; what is not here says so.
 | `agents/knowledge-base` — RAG with citations | ⬜ Next |
 | `agents/self-improving` — evaluator/optimizer loop | ⬜ Planned |
 | `agents/improver` — reviewer crew that patches this repo | ⬜ Planned |
-| `evals/` — scored test cases per agent | ⬜ Planned |
+| [`evals/`](evals) — scored cases per agent, including the ones they fail | ✅ Done |
 
 ---
 
@@ -263,6 +263,43 @@ blocked. Nobody built that view; it falls out of writing the links.
 ```bash
 make brief      # render, speak and record one day
 make overlay    # the same overlay, live on localhost
+```
+
+---
+
+## Evals
+
+Every agent README above says the same thing: the scripted mocks prove the
+plumbing, not the prompt. [`evals/`](evals) is where that gap gets **measured**
+instead of merely admitted.
+
+Two layers, kept apart on purpose. `LOGIC` scores deterministic code — free,
+exact, runs in CI on every commit. `JUDGEMENT` scores the model against the
+real API and is opt-in. Mixing them yields one number that looks like quality
+and measures neither.
+
+| Agent | Cases | Passed | Score | Known gaps |
+|---|---|---|---|---|
+| brain | 14 | 14 | 100% | 3 |
+| calendar-booking | 14 | 14 | 100% | 2 |
+| call-intake | 13 | 13 | 100% | 3 |
+| email-triage | 11 | 11 | 100% | 4 |
+| lead-research | 12 | 12 | 100% | 4 |
+| **overall** | **64** | **64** | **100%** | **16** |
+
+**100% is not the interesting number. 16 known gaps is.** A `KNOWN_GAP` case
+documents a real limitation — it is kept, it fails, and it fails visibly.
+Deleting it would make the score look better and the agent no safer, so gaps
+are excluded from the headline rather than allowed to create pressure to remove
+them. The largest honest hole: both regex safety nets are English-only, and
+this business takes German mail and German calls.
+
+A gap that starts *passing* is reported as a surprise and exits non-zero.
+That mechanism earned its place on the first run, catching an overstated claim
+in the scheduling engine's own docstring.
+
+```bash
+make eval
 ```
 
 

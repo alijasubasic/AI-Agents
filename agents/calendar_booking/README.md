@@ -125,10 +125,11 @@ call" beats a bare no.
   returns blocks with no titles, which would degrade `describe_conflicts()`, and
   it exposes no per-attendee working hours or time zone, so those need a
   directory lookup this agent does not have.
-- **Candidate times are aligned in UTC.** For whole-hour-offset zones that lands
-  on clean local quarter-hours. Zones at :30 or :45 offsets (Asia/Kolkata,
-  Asia/Kathmandu) would get slots at odd local minutes. Aligning in the
-  organiser's zone would fix it.
+- **Candidate times are aligned in UTC.** Whole-hour and half-hour offsets are
+  fine — a 15- or 30-minute grid divides both, so Asia/Kolkata gets clean local
+  times. Zones at a **:45** offset (Asia/Kathmandu, Pacific/Chatham) are the
+  exception and land on odd local minutes. Aligning in the organiser's zone
+  would fix it.
 - **No recurring events.** Fixtures and providers model single blocks only. Real
   calendars are full of recurrence rules, and expanding those correctly is a
   meaningful piece of work.
@@ -137,4 +138,5 @@ call" beats a bare no.
   way to know which.
 - **The scripted responses prove the plumbing, not the prompt.** Whether the
   model reliably extracts the right duration and attendees from a vague request
-  is an evals question, and `evals/` does not exist yet.
+  is a JUDGEMENT-layer evals question, and that layer needs a live API key
+  — see [`evals/`](../../evals).

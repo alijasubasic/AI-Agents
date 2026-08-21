@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install demo brief overlay test lint fmt check clean
+.PHONY: help install demo brief overlay test lint fmt eval check clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -28,7 +28,7 @@ fmt: ## Auto-fix formatting and lint rules
 	uv run ruff format .
 	uv run ruff check --fix .
 
-check: lint test demo ## Everything CI runs, in the same order
+check: lint test eval demo ## Everything CI runs, in the same order
 
 clean: ## Remove caches and local run artifacts
 	rm -rf .pytest_cache .ruff_cache .coverage htmlcov traces briefs vault
@@ -40,3 +40,6 @@ brief: ## Run every agent and write the morning brief to briefs/
 
 overlay: ## Serve the live overlay on http://127.0.0.1:8787
 	uv run python -m console.server
+
+eval: ## Run the deterministic eval suite
+	uv run python -m evals

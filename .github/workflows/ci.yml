@@ -44,6 +44,11 @@ jobs:
       - name: Run tests
         run: uv run pytest -q --cov=core --cov-report=term-missing
 
+      - name: Run the eval suite
+        # The LOGIC layer only: deterministic, free, and the number the
+        # improvement agent's verifier gate compares against.
+        run: make eval
+
       - name: Run every demo end to end
         # Guards the promise in the README: a fresh machine with no API key
         # can clone this repo and see the agents actually run.

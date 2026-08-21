@@ -132,4 +132,5 @@ disagree with the labels it is describing.
   different companies as far as this agent is concerned.
 - **The scripted responses prove the plumbing, not the prompt.** Whether a real
   model reliably cites verbatim rather than paraphrasing is an evals question,
-  and `evals/` does not exist yet.
+  and answering it needs the JUDGEMENT layer in [`evals/`](../../evals),
+  which only runs against a live API key.

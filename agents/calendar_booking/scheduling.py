@@ -65,10 +65,10 @@ def blocked_periods(busy: list[BusyBlock], policy: SchedulingPolicy) -> list[Bus
 def _align_up(moment: datetime, minutes: int) -> datetime:
     """Round `moment` up to the next multiple of `minutes` past the hour.
 
-    Alignment happens in UTC. For the time zones this agent is used with that
-    puts candidates on clean local quarter-hours; zones at :30 or :45 offsets
-    (Asia/Kolkata, Asia/Kathmandu) would land on odd local minutes. See the
-    limitations section of this agent's README.
+    Alignment happens in UTC, which keeps candidates on clean local minutes for
+    every whole-hour and half-hour offset: a 15- or 30-minute grid divides both.
+    Zones at a :45 offset (Asia/Kathmandu, Pacific/Chatham) are the exception
+    and land on odd local times. See this agent's README.
     """
     moment = moment.replace(second=0, microsecond=0)
     step = timedelta(minutes=minutes)
