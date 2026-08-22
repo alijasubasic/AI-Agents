@@ -13,6 +13,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from core.dotenv import load as load_dotenv
+
 Mode = Literal["mock", "live"]
 
 #: Default model for every agent. See docs/adr/0003-model-selection.md.
@@ -64,7 +66,14 @@ class Settings(BaseModel):
 
     @classmethod
     def from_env(cls) -> Settings:
-        """Build settings from environment variables, falling back to defaults."""
+        """Build settings from environment variables, falling back to defaults.
+
+        Reads `.env` first, if there is one. The real environment wins over it,
+        so CI and an explicit `AGENT_MODE=live make demo` are never overridden
+        by a stale file on somebody's machine.
+        """
+        load_dotenv()
+
         mode_raw = os.environ.get("AGENT_MODE", "mock").strip().lower()
         mode: Mode = "live" if mode_raw == "live" else "mock"
 
