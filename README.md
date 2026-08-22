@@ -369,7 +369,7 @@ blocked. Nobody built that view; it falls out of writing the links.
 
 ```bash
 make brief      # render, speak and record one day
-make overlay    # the same overlay, live on localhost
+make console    # the operator console, live on localhost
 ```
 
 ---
@@ -532,3 +532,48 @@ tests/         tests for core/
 ## License
 
 MIT
+
+---
+
+## The operator console
+
+An Obsidian-styled workspace you can type into: give an agent a task, answer
+what it asks back, and see what the brain made of the result.
+
+```bash
+make console        # http://127.0.0.1:8756
+```
+
+**It can create work. It cannot approve any.** An earlier version of this
+console was strictly read-only, on the stated grounds that a display with
+action buttons is a second path around the codex. Adding a chat contradicts
+that, so the rule was re-examined rather than dropped. The principle was never
+"the console must be inert" — it was *nothing reaches the outside world
+unreviewed*. A task typed here becomes an ordinary `Decision` and goes through
+the same codex as work an agent raised itself.
+
+The route table is asserted directly by a test: four routes, none of which
+approves, sends, books or overrides anything.
+
+**Clarification is not escalation**, and that distinction is the idea worth
+taking from this component. Escalation means a human must *decide* — the work
+leaves the agent. Clarification means a human must *tell it something* — the
+work stays with the agent, paused. An agent that can only escalate has to
+abandon any task with a gap in it; one that guesses instead produces confident,
+wrong work.
+
+```
+you     Have a look at that company we spoke to and pull together a profile.
+agent   Which company should I research? (I could not identify one, and
+        researching the wrong one produces a profile that looks right...)
+you     Kestrel Systems
+agent   Kestrel Systems: 2 of 7 claims verified against 4 source(s).
+```
+
+**The brain answers first.** When an agent asks something, the codex is checked
+before the operator is troubled — *"may I send this to an unconfirmed
+address?"* is answered by article A4, not by a person. An assistant that
+interrupts you with questions its own rulebook settles is one you learn to
+ignore, and then you miss the question that mattered.
+
+→ [`console/CONSOLE.md`](console/CONSOLE.md)
