@@ -385,3 +385,43 @@ def test_an_empty_conversation_has_nothing_open():
     assert conversation.open_count == 0
     assert conversation.waiting == []
     assert conversation.total_cost_usd == 0.0
+
+
+# --- Live wiring --------------------------------------------------------
+
+
+def test_the_scripted_session_is_used_when_not_live(monkeypatch):
+    from console.live import build_session_for
+
+    monkeypatch.setenv("AGENT_MODE", "mock")
+    session, is_live = build_session_for(Settings(trace_enabled=False))
+
+    assert is_live is False
+    assert set(session.handlers) == {"lead-research", "knowledge-base"}
+
+
+def test_a_live_session_refuses_to_start_in_mock_mode():
+    """Silently falling back to scripts would be worse than refusing.
+
+    A console answering from fixtures while the operator believes it is talking
+    to a model is the kind of thing that takes an afternoon to notice.
+    """
+    from console.live import build_live_session
+
+    with pytest.raises(RuntimeError, match="AGENT_MODE=live"):
+        build_live_session(Settings(mode="mock", trace_enabled=False))
+
+
+def test_a_live_session_reaches_every_free_text_agent():
+    from console.live import build_live_session
+
+    session = build_live_session(Settings(mode="live", api_key="sk-ant-test", trace_enabled=False))
+    assert set(session.handlers) == {"lead-research", "knowledge-base", "calendar-booking"}
+
+
+def test_the_scripted_router_runs_out_which_is_why_live_exists():
+    # The defect that prompted console/live.py: five scripted decisions, and
+    # the sixth request has nothing left to answer with.
+    from console.scripted import ROUTES
+
+    assert len(ROUTES) == 5

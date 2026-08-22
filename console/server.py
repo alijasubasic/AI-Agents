@@ -184,16 +184,30 @@ def serve(
 def main() -> None:
     from agents.brain import demo as brain_demo
     from console.briefing import build_overlay_state
-    from console.chat_demo import build_session
+    from console.live import build_session_for
     from core.config import Settings
     from core.console import configure_stdout
 
     configure_stdout()
     settings = Settings.from_env()
-    report = brain_demo.run(settings)
-    state = build_overlay_state(report)
 
-    serve(build_session(settings), lambda: state)
+    session, is_live = build_session_for(settings)
+
+    # The morning brief shown in the right-hand pane always comes from the
+    # scripted run: it is yesterday's record, and regenerating it against the
+    # live API on every server start would cost money to redraw a panel.
+    state = build_overlay_state(brain_demo.run(settings.model_copy(update={"mode": "mock"})))
+
+    if is_live:
+        print(f"Live: routing, answering and supervision run on {settings.model}.")
+        print("Data is still fixtures — no real calendar, mailbox or web search.")
+        print("Each request costs a few cents.")
+    else:
+        print("Scripted mode: replies come from fixtures and run out after a few")
+        print("requests. Set AGENT_MODE=live with an ANTHROPIC_API_KEY for a")
+        print("console you can actually work in.")
+
+    serve(session, lambda: state)
 
 
 if __name__ == "__main__":
