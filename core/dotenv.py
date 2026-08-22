@@ -68,8 +68,12 @@ def load(path: Path | str = DEFAULT_PATH, *, override: bool = False) -> dict[str
     if not file.exists():
         return {}
 
+    # utf-8-sig, not utf-8: Notepad and several Windows editors write a byte
+    # order mark, and under plain utf-8 that mark becomes part of the first
+    # line — turning a leading comment into a non-comment, or worse, gluing
+    # itself to the first key name so the setting silently never applies.
     applied: dict[str, str] = {}
-    for key, value in parse(file.read_text(encoding="utf-8")).items():
+    for key, value in parse(file.read_text(encoding="utf-8-sig")).items():
         if not override and key in os.environ:
             continue
         os.environ[key] = value

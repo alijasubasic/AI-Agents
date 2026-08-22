@@ -116,8 +116,11 @@ def _print(result: ImprovementRun, *, applied: bool) -> None:
     if result.nits:
         print(f"\n  {len(result.nits)} nits collected, not patched")
 
+    # Printed on every run, not only on --apply. A dry run spends real money on
+    # the reviewer crew, and the first live run of this CLI reported no cost at
+    # all — which is precisely the number somebody wants before running it again.
+    print(f"\n  {summarise(result)}")
     if applied:
-        print(f"\n  {summarise(result)}")
         for branch in result.branches:
             print(f"    branch: {branch}")
 

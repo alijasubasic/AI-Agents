@@ -5,45 +5,60 @@ brain cannot review five different shapes, so each one is adapted into a common
 `Decision` envelope: what an agent concluded, what it would do about it, and
 what it already knows is wrong with it.
 
-The verdict type is deliberately ordered. `Verdict` supports comparison, and the
-supervisor combines judgements by taking the strictest — which is what makes
-"the brain can only ever be more conservative" a property of the type system
-rather than a promise in a prompt.
+The verdict type is deliberately ordered, and `supervisor.review` combines
+every reviewer's opinion with `max()`. Those two facts together are what make
+"the brain can only ever be more conservative" checkable rather than merely
+promised in a prompt.
+
+Worth stating precisely, because an earlier version of this docstring did not:
+the *type* supplies the ordering, it does not enforce the rule. Nothing here
+stops a caller reaching for `min()`. The enforcement lives in `supervisor.py`
+and is pinned by an exhaustive test over every combination of codex outcome and
+reviewer opinion — which is where a guarantee of this kind has to live.
 """
 
 from __future__ import annotations
 
 from datetime import date, datetime
 from enum import IntEnum, StrEnum
-from functools import total_ordering
 
 from pydantic import BaseModel, Field
 
 
-@total_ordering
 class Verdict(IntEnum):
     """What may happen to a decision. Higher is stricter.
 
-    Ordering matters: combining two verdicts takes the maximum, so no reviewer
-    in the chain can ever loosen what another has already tightened.
+    Ordering is what the supervisor's guarantee rests on: `supervisor.review`
+    combines every reviewer's verdict with `max()`, so no reviewer in the chain
+    can loosen what another has tightened. `IntEnum` supplies that ordering —
+    it inherits all four comparison operators from `int`, and `max()` and
+    `sorted()` work on it with nothing added.
+
+    This class previously carried `@total_ordering` and a hand-written
+    `__lt__`. Both were dead: `total_ordering` only fills in operators
+    inherited from `object`, and these come from `int`, so it generated
+    nothing. The custom `__lt__` merely restated `int`'s behaviour while
+    refusing comparisons against plain integers. The live reviewer crew found
+    it, and two reviewers found it independently.
     """
 
     APPROVED = 0
     HOLD_FOR_HUMAN = 1
     BLOCKED = 2
 
-    def __lt__(self, other: object) -> bool:
-        if not isinstance(other, Verdict):
-            return NotImplemented
-        return self.value < other.value
-
     @property
     def label(self) -> str:
+        """A human-readable name.
+
+        Falls back to the member name rather than raising: a new verdict is a
+        deliberate act, and a `KeyError` from a *display* helper is a poor way
+        to find out that somebody added one.
+        """
         return {
             Verdict.APPROVED: "approved",
             Verdict.HOLD_FOR_HUMAN: "hold for human",
             Verdict.BLOCKED: "blocked",
-        }[self]
+        }.get(self, self.name.lower().replace("_", " "))
 
 
 class DecisionKind(StrEnum):

@@ -111,3 +111,26 @@ def test_an_explicit_environment_still_beats_a_dotenv(tmp_path, monkeypatch):
     (tmp_path / ".env").write_text("AGENT_MAX_STEPS=42", encoding="utf-8")
 
     assert Settings.from_env().max_steps == 7
+
+
+def test_a_file_saved_by_notepad_still_works(tmp_path, monkeypatch):
+    """Windows editors write a byte order mark; it must not reach the parser.
+
+    Under plain utf-8 the mark becomes part of the first line, which either
+    stops a leading comment from being recognised as one or, if the file starts
+    with a setting, glues itself to the key name so the value silently never
+    applies.
+    """
+    env = tmp_path / ".env"
+    env.write_text("EXAMPLE_SETTING=works", encoding="utf-8-sig")
+    monkeypatch.delenv("EXAMPLE_SETTING", raising=False)
+
+    assert load(env) == {"EXAMPLE_SETTING": "works"}
+
+
+def test_windows_line_endings_are_handled(tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_bytes(b"# comment\r\nEXAMPLE_SETTING=works\r\n")
+    monkeypatch.delenv("EXAMPLE_SETTING", raising=False)
+
+    assert load(env) == {"EXAMPLE_SETTING": "works"}
