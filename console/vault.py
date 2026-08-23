@@ -94,21 +94,40 @@ class ObsidianVault:
         #: Every path written this session, for the demo and the tests.
         self.written: list[Path] = []
 
-    def write(self, note: VaultNote) -> str:
-        folder, filename = note.path_parts
-        directory = self.root / folder
-        directory.mkdir(parents=True, exist_ok=True)
+    def _target(self, note: VaultNote) -> Path:
+        """Where a note lands, having proved it lands inside the vault.
 
-        path = directory / f"{safe_slug(Path(filename).stem)}.md"
+        The filename was already safe — `Path(filename).stem` drops any
+        directory part before `safe_slug` ever sees it. **The folder was not.**
+        `note.folder` went into the path unchecked, so a note asking for
+        `../../..` wrote wherever it liked.
+
+        That was theoretical while every note was built in this repository from
+        a fixed folder constant. It stopped being theoretical when the dashboard
+        gained an HTTP route that writes notes, so the containment is asserted
+        here rather than trusted at each call site — one check on the way to
+        disk covers every writer, including the ones nobody has written yet.
+        """
+        folder, filename = note.path_parts
+        candidate = self.root / folder / f"{safe_slug(Path(filename).stem)}.md"
+
+        root = self.root.resolve()
+        # `strict=False`: the note does not exist yet, and neither may its
+        # folder. Resolution still normalises away every `..` in the path.
+        if not candidate.resolve(strict=False).is_relative_to(root):
+            raise ValueError(f"note folder escapes the vault: {folder!r}")
+        return candidate
+
+    def write(self, note: VaultNote) -> str:
+        path = self._target(note)
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(render_note(note), encoding="utf-8")
         self.written.append(path)
         return str(path)
 
     def read(self, note: VaultNote) -> str:
         """Read a note back. Used by tests and by anything checking for drift."""
-        folder, filename = note.path_parts
-        path = self.root / folder / f"{safe_slug(Path(filename).stem)}.md"
-        return path.read_text(encoding="utf-8")
+        return self._target(note).read_text(encoding="utf-8")
 
 
 class MemoryVault:

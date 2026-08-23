@@ -46,5 +46,8 @@ desktop.ini
 # --- Brain briefs (contain decision text) ---
 briefs/
 
+# --- Telemetry cache (counts from local Claude Code transcripts) ---
+.cache/
+
 # --- Obsidian vault written by the console demo ---
 vault/

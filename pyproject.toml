@@ -49,6 +49,9 @@ select = [
 ]
 
 [tool.pytest.ini_options]
-# Each agent keeps its tests next to its code, so `agents` is a test root too.
-testpaths = ["tests", "agents", "console", "evals"]
+# Each package keeps its tests next to its code, so every package that has
+# any is a test root. Adding a package here is not optional: a directory left
+# off this list is collected by `pytest <dir>` and silently skipped by CI,
+# which is the worst of both — the tests pass locally and never run.
+testpaths = ["tests", "agents", "console", "evals", "telemetry", "jarvis"]
 addopts = "-q"

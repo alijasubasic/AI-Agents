@@ -47,18 +47,46 @@ DEFAULT_PORT = 8756
 MAX_BODY_BYTES = 8 * 1024
 
 #: The complete route table. Nothing here approves, sends, books or overrides.
+#:
+#: `/api/capture` writes a Markdown note into the local vault, which is the one
+#: route that touches the disk. It creates a record; it authorises nothing. See
+#: `jarvis/capture.py` for why that stays on the right side of the rule.
 ROUTES: dict[tuple[str, str], str] = {
-    ("GET", "/"): "the console",
-    ("GET", "/api/state"): "current state as JSON",
+    ("GET", "/"): "the Jarvis dashboard",
+    ("GET", "/workspace"): "the plain three-pane console",
+    ("GET", "/api/state"): "conversation state as JSON",
+    ("GET", "/api/dashboard"): "the whole dashboard as JSON",
     ("POST", "/api/task"): "create a task",
     ("POST", "/api/answer"): "answer an agent's question",
+    ("POST", "/api/capture"): "write a note into the vault",
 }
 
 StateProvider = Callable[[], OverlayState]
 
+#: Supplies the dashboard payload, or None where no dashboard is wired up —
+#: `console.chat_demo` and the older tests build a server without one.
+DashboardProvider = Callable[[], dict] | None
 
-def build_handler(session: ChatSession, state_provider: StateProvider):
-    """A request handler bound to one chat session."""
+#: Writes a captured note and returns where it landed. None disables capture,
+#: which the dashboard shows as "no vault configured" rather than failing on
+#: the button press.
+CaptureWriter = Callable[[str, str], str] | None
+
+
+def build_handler(
+    session: ChatSession,
+    state_provider: StateProvider,
+    *,
+    dashboard_provider: DashboardProvider = None,
+    dashboard_page: Callable[[], str] | None = None,
+    capture_writer: CaptureWriter = None,
+):
+    """A request handler bound to one chat session.
+
+    The dashboard and capture are injected rather than imported, so this module
+    stays the HTTP layer and nothing else. A server built without them still
+    serves the plain console, which is what the older tests do.
+    """
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "operator-console/1.0"
@@ -101,14 +129,27 @@ def build_handler(session: ChatSession, state_provider: StateProvider):
 
         # -- routes ------------------------------------------------------
 
+        def _workspace(self) -> None:
+            page = render_workspace(state_provider(), session.conversation)
+            self._send(200, page.encode("utf-8"), "text/html; charset=utf-8")
+
         def do_GET(self) -> None:  # noqa: N802 - name fixed by the base class
             path = self.path.split("?", 1)[0]
 
             if path == "/":
-                page = render_workspace(state_provider(), session.conversation)
-                self._send(200, page.encode("utf-8"), "text/html; charset=utf-8")
+                if dashboard_page is None:
+                    self._workspace()
+                else:
+                    self._send(200, dashboard_page().encode("utf-8"), "text/html; charset=utf-8")
+            elif path == "/workspace":
+                self._workspace()
             elif path == "/api/state":
                 self._json(self._state())
+            elif path == "/api/dashboard":
+                if dashboard_provider is None:
+                    self._json({"error": "no dashboard on this server"}, 404)
+                else:
+                    self._json(dashboard_provider())
             else:
                 self._json({"error": "no such route", "routes": _route_list()}, 404)
 
@@ -140,11 +181,32 @@ def build_handler(session: ChatSession, state_provider: StateProvider):
                     return
                 self._json(self._state())
 
+            elif path == "/api/capture":
+                if capture_writer is None:
+                    self._json({"error": "no vault configured"}, 404)
+                    return
+                title = str(payload.get("title", ""))
+                body = str(payload.get("body", ""))
+                try:
+                    written = capture_writer(title, body)
+                except ValueError as refusal:
+                    # `CaptureRefused` and any other refusal from the note
+                    # builder. The message is written to be shown; nothing in
+                    # it comes from the filesystem.
+                    self._json({"error": str(refusal)}, 400)
+                    return
+                except OSError:
+                    self._json({"error": "the vault could not be written"}, 500)
+                    return
+                self._json({"written": written, **self._state()})
+
             else:
                 self._json({"error": "no such route", "routes": _route_list()}, 404)
 
         def do_HEAD(self) -> None:  # noqa: N802
-            self.send_response(200 if self.path.split("?", 1)[0] in ("/", "/api/state") else 404)
+            path = self.path.split("?", 1)[0]
+            known = any(method == "GET" and route == path for method, route in ROUTES)
+            self.send_response(200 if known else 404)
             self.end_headers()
 
         def log_message(self, fmt: str, *args) -> None:
@@ -162,6 +224,9 @@ def serve(
     state_provider: StateProvider,
     *,
     port: int = DEFAULT_PORT,
+    dashboard_provider: DashboardProvider = None,
+    dashboard_page: Callable[[], str] | None = None,
+    capture_writer: CaptureWriter = None,
 ) -> None:
     """Run the console until interrupted.
 
@@ -169,7 +234,14 @@ def serve(
     will spend money when told to; putting it on a network interface would be a
     decision nobody should be able to make by passing an argument.
     """
-    server = ThreadingHTTPServer(("127.0.0.1", port), build_handler(session, state_provider))
+    handler = build_handler(
+        session,
+        state_provider,
+        dashboard_provider=dashboard_provider,
+        dashboard_page=dashboard_page,
+        capture_writer=capture_writer,
+    )
+    server = ThreadingHTTPServer(("127.0.0.1", port), handler)
     print(f"Operator console on http://127.0.0.1:{port}")
     print("Routes: " + ", ".join(_route_list()))
     print("Ctrl+C to stop.")
@@ -182,32 +254,15 @@ def serve(
 
 
 def main() -> None:
-    from agents.brain import demo as brain_demo
-    from console.briefing import build_overlay_state
-    from console.live import build_session_for
-    from core.config import Settings
-    from core.console import configure_stdout
+    """Start the console with the dashboard on `/`.
 
-    configure_stdout()
-    settings = Settings.from_env()
+    Delegated to `jarvis.app` rather than assembled here. This module is the
+    HTTP layer; knowing how to build a chat session, a morning brief, telemetry
+    and a vault writer is somebody else's job.
+    """
+    from jarvis.app import main as run_dashboard
 
-    session, is_live = build_session_for(settings)
-
-    # The morning brief shown in the right-hand pane always comes from the
-    # scripted run: it is yesterday's record, and regenerating it against the
-    # live API on every server start would cost money to redraw a panel.
-    state = build_overlay_state(brain_demo.run(settings.model_copy(update={"mode": "mock"})))
-
-    if is_live:
-        print(f"Live: routing, answering and supervision run on {settings.model}.")
-        print("Data is still fixtures — no real calendar, mailbox or web search.")
-        print("Each request costs a few cents.")
-    else:
-        print("Scripted mode: replies come from fixtures and run out after a few")
-        print("requests. Set AGENT_MODE=live with an ANTHROPIC_API_KEY for a")
-        print("console you can actually work in.")
-
-    serve(session, lambda: state)
+    run_dashboard()
 
 
 if __name__ == "__main__":

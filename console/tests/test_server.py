@@ -71,18 +71,25 @@ def post(base: str, path: str, payload: dict | bytes) -> tuple[int, str]:
 # --- The route table ----------------------------------------------------
 
 
-def test_the_route_table_is_exactly_four_routes():
+def test_the_route_table_is_exactly_these_seven_routes():
     assert set(ROUTES) == {
         ("GET", "/"),
+        ("GET", "/workspace"),
         ("GET", "/api/state"),
+        ("GET", "/api/dashboard"),
         ("POST", "/api/task"),
         ("POST", "/api/answer"),
+        ("POST", "/api/capture"),
     }
 
 
 def test_no_route_approves_sends_books_or_overrides():
     # The invariant this whole design rests on. A new endpoint named any of
     # these fails here before anyone has to notice it in review.
+    #
+    # `/api/capture` writes a Markdown note to the local vault and is the only
+    # route that touches the disk. It creates a record; it authorises nothing,
+    # which is the distinction this list encodes.
     forbidden = ("approve", "send", "book", "override", "verdict", "merge", "confirm")
     for _method, path in ROUTES:
         assert not any(word in path.lower() for word in forbidden), path
@@ -240,3 +247,148 @@ def test_a_script_tag_in_a_task_cannot_close_the_bootstrap_block(console):
     assert "</script><img" not in page
     # Exactly the two script blocks the template defines.
     assert page.count("</script>") == 2
+
+
+# --- The dashboard routes ------------------------------------------------
+
+
+@pytest.fixture
+def dashboard_console():
+    """A console with the Jarvis dashboard wired in."""
+    from jarvis.app import App
+    from jarvis.diagnostics import measure
+
+    session = build_session(settings())
+    state = build_overlay_state(brain_demo.run(settings()))
+    app = App(
+        session=session,
+        overlay=state,
+        diagnostics=measure(settings(), run_evals=False),
+        settings=settings(),
+        vault_path=None,
+    )
+
+    server = ThreadingHTTPServer(
+        ("127.0.0.1", 0),
+        build_handler(
+            session,
+            lambda: state,
+            dashboard_provider=app.payload,
+            dashboard_page=app.page,
+            capture_writer=app.capture,
+        ),
+    )
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{server.server_address[1]}", app
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_the_root_serves_the_dashboard_when_one_is_wired_in(dashboard_console):
+    base, _ = dashboard_console
+    status, body = get(base, "/")
+
+    assert status == 200
+    assert "J.A.R.V.I.S." in body
+    assert "https://" not in body
+
+
+def test_the_plain_console_is_still_reachable(dashboard_console):
+    base, _ = dashboard_console
+    status, body = get(base, "/workspace")
+
+    assert status == 200
+    assert "<!doctype html>" in body.lower()
+
+
+def test_the_root_falls_back_to_the_plain_console_without_a_dashboard(console):
+    # `build_handler` with no dashboard still serves something useful.
+    base, _ = console
+    status, body = get(base, "/")
+
+    assert status == 200
+    assert "J.A.R.V.I.S." not in body
+
+
+def test_the_dashboard_endpoint_returns_every_panel(dashboard_console):
+    base, _ = dashboard_console
+    status, body = get(base, "/api/dashboard")
+    payload = json.loads(body)
+
+    assert status == 200
+    assert set(payload) >= {"fleet", "sessions", "analytics", "checks", "turns", "questions"}
+    assert len(payload["fleet"]) == 8
+
+
+def test_the_dashboard_endpoint_is_absent_when_none_is_wired_in(console):
+    base, _ = console
+    status, _body = get(base, "/api/dashboard")
+    assert status == 404
+
+
+def test_a_capture_is_written_and_the_state_comes_back(dashboard_console, tmp_path):
+    base, app = dashboard_console
+    app.vault_path = tmp_path / "vault"
+
+    status, body = post(base, "/api/capture", {"title": "A thought", "body": "the body"})
+    payload = json.loads(body)
+
+    assert status == 200
+    assert payload["written"].endswith(".md")
+    assert "turns" in payload, "the page re-renders from the same response"
+    written = list((tmp_path / "vault" / "Captures").glob("*.md"))
+    assert len(written) == 1
+    assert "the body" in written[0].read_text(encoding="utf-8")
+
+
+def test_an_empty_capture_is_refused_with_a_reason(dashboard_console, tmp_path):
+    base, app = dashboard_console
+    app.vault_path = tmp_path / "vault"
+
+    status, body = post(base, "/api/capture", {"title": "x", "body": "   "})
+
+    assert status == 400
+    assert "body" in json.loads(body)["error"]
+    assert not (tmp_path / "vault").exists()
+
+
+def test_capture_is_refused_when_no_vault_is_configured(dashboard_console):
+    base, app = dashboard_console
+    app.vault_path = None
+
+    status, body = post(base, "/api/capture", {"title": "x", "body": "y"})
+
+    assert status == 400
+    assert "vault" in json.loads(body)["error"]
+
+
+def test_a_capture_cannot_choose_its_folder(dashboard_console, tmp_path):
+    """The payload has no `folder` field, and adding one would not help.
+
+    Every note lands in `Captures/`, fixed in code. This asserts the obvious
+    thing so that a later "make the folder configurable" change has to argue
+    with a test.
+    """
+    base, app = dashboard_console
+    app.vault_path = tmp_path / "vault"
+
+    post(base, "/api/capture", {"title": "x", "body": "y", "folder": "../../elsewhere"})
+
+    assert (tmp_path / "vault" / "Captures").is_dir()
+    assert not (tmp_path / "elsewhere").exists()
+
+
+def test_head_answers_for_every_get_route(dashboard_console):
+    base, _ = dashboard_console
+    for _method, path in ROUTES:
+        request = urllib.request.Request(f"{base}{path}", method="HEAD")  # noqa: S310
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:  # noqa: S310
+                code = response.status
+        except urllib.error.HTTPError as exc:
+            code = exc.code
+        expected = 200 if _method == "GET" else 404
+        assert code == expected, path

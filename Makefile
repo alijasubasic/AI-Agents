@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install demo brief console test lint fmt eval improve check clean
+.PHONY: help install demo brief console jarvis telemetry test lint fmt eval improve check clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -20,6 +20,8 @@ demo: ## Run every demo — all work with no API key and no network
 	uv run python -m agents.brain.demo
 	uv run python -m console.demo
 	uv run python -m console.chat_demo
+	uv run python -m telemetry.demo
+	uv run python -m jarvis.demo
 
 test: ## Run the test suite with coverage
 	uv run pytest --cov=core --cov-report=term-missing
@@ -35,7 +37,7 @@ fmt: ## Auto-fix formatting and lint rules
 check: lint test eval demo ## Everything CI runs, in the same order
 
 clean: ## Remove caches and local run artifacts
-	rm -rf .pytest_cache .ruff_cache .coverage htmlcov traces briefs vault
+	rm -rf .pytest_cache .ruff_cache .coverage htmlcov traces briefs vault .cache
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
 brief: ## Run every agent and write the morning brief to briefs/
@@ -44,6 +46,12 @@ brief: ## Run every agent and write the morning brief to briefs/
 
 console: ## Serve the operator console on http://127.0.0.1:8756
 	uv run python -m console.server
+
+jarvis: ## Serve the J.A.R.V.I.S. dashboard on http://127.0.0.1:8756
+	uv run python -m jarvis
+
+telemetry: ## Read this machine's own Claude Code history (no key, no network)
+	uv run python -m telemetry.demo
 
 eval: ## Run the deterministic eval suite
 	uv run python -m evals

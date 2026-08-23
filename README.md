@@ -34,6 +34,8 @@ finished and tested; what is not here says so.
 | [`agents/self_improving`](agents/self_improving) — evaluator/optimizer loop with a holdout | ✅ Done |
 | [`agents/improver`](agents/improver) — reviewer crew that patches this repo | ✅ Done |
 | [`evals/`](evals) — scored cases per agent, including the ones they fail | ✅ Done |
+| [`telemetry/`](telemetry) — this machine's own Claude Code history, read locally | ✅ Done |
+| [`jarvis/`](jarvis) — J.A.R.V.I.S. operations dashboard over the whole fleet | ✅ Done |
 
 ---
 
@@ -336,40 +338,73 @@ make brief    # or: python -m agents.brain.demo
 
 ## The console
 
-### [console/](console) ✅ — overlay, voice and vault
+### [console/](console) ✅ — chat, overlay, voice and vault
 
-The layer a person actually looks at: a heads-up display, a spoken briefing,
-and an Obsidian vault recording every decision.
+The layer a person actually looks at. Give an agent a task, answer the
+questions it asks back, and see what the brain made of the result.
 
-**The console observes; it cannot act.** No button approves a held decision, no
-endpoint sends a blocked email — the server refuses every HTTP method except
-`GET` and `HEAD` before it looks at the path. A display with controls would be a
-second way to approve something, one that never passes through the codex and
-never lands in the audit trail. Two tests hold the line: one asserts the page
-contains no `<form>`, `<button>` or `<input>`, the other walks every mutating
-method and expects `405`.
+**It can create work. It cannot approve any.** An earlier version was strictly
+read-only, on the grounds that a display with buttons is a second path around
+the codex. The principle was right and the rule was too blunt — a task typed
+here becomes an ordinary `Decision` and goes through the same brain and the
+same codex as work an agent raised itself. So the rule is sharper and still
+testable:
 
-**The overlay** is one self-contained HTML file — inline CSS, inline JSON, no
-build step, no CDN. It opens from disk with the network unplugged. Decisions are
-ordered by how much attention they need, not by time. Chrome's `--app` flag
-turns it into the frameless always-on-top window.
+> The console may create work; it has no route that approves any.
+
+There is no endpoint that sets a verdict, sends a message, books anything or
+overrides an escalation. The route table is asserted directly, so adding one is
+a test failure rather than an oversight.
+
+**Clarification is not escalation.** Before this, agents could finish or
+escalate — which forces a bad choice on any task with a gap in it: abandon it
+to a human, or guess. `NEEDS_CLARIFICATION` is a pause, not a handover; the
+agent still owns the work and continues once told. And the brain answers first,
+settling the questions the codex already covers rather than interrupting you
+with them.
 
 **The voice** enforces its own per-character ceiling, because ElevenLabs bills
 that way and a runaway loop would be a billing incident. Spoken and displayed
 wording are generated separately: "2 of 7 (29%)" is fine in a table and
-unintelligible aloud. Only blocks and urgent tasks are read out in detail —
-reading seven approvals aloud trains the listener to stop paying attention by
-the third, which is when the blocked one arrives.
+unintelligible aloud.
 
-**The Obsidian vault** is the one integration here built completely rather than
-as a skeleton, because a vault is just a folder of Markdown files. Every
-decision note links to its agent, its codex articles and the day's brief, so
-opening `A2 Honesty` in Obsidian lists every decision that article has ever
-blocked. Nobody built that view; it falls out of writing the links.
+**The Obsidian vault** is the one integration built completely rather than as a
+skeleton, because a vault is just a folder of Markdown files. Every decision
+note links to its agent, its codex articles and the day's brief, so opening
+`A2 Honesty` in Obsidian lists every decision that article has ever blocked.
+Nobody built that view; it falls out of writing the links.
+
+### [jarvis/](jarvis) ✅ — the operations dashboard
+
+The console with a heads-up display over it: arc reactor, agent cards, a
+thirty-day activity heatmap, live session monitoring and system diagnostics.
+The look is borrowed from
+[AndrewKochulab/jarvis-dashboard](https://github.com/AndrewKochulab/jarvis-dashboard);
+the implementation is this repository's.
+
+**One panel shows real data.** Every agent here runs on fixtures and says so.
+[`telemetry/`](telemetry) is the exception — it reads Claude Code's own session
+transcripts from `~/.claude/projects`, so the token counts, costs and heatmap
+are this machine's actual history. No key, no network, no account.
+
+Porting the analytics found two errors in the original's arithmetic. Claude
+Code writes **one record per content block**, each repeating the message's full
+`usage`, so summing across records counts the same tokens up to seven times —
+456M tokens and $367 became 252M and $177 once deduplicated. And **cache reads
+are billed** at 0.1× input, which on an agent session is most of the bill. Both
+are pinned by tests.
+
+**Diagnostics report the guardrails, not the machine.** The original panel shows
+CPU, memory and uptime. The interesting question about an agent fleet is not
+whether the laptop is warm, so this one runs the deterministic eval suite and
+reports the score, the surprises, the known gaps, the step ceiling, the run
+deadline and the cost budget.
 
 ```bash
+make jarvis     # the dashboard on http://127.0.0.1:8756
+make console    # the same server; / is the dashboard, /workspace the plain console
+make telemetry  # this machine's Claude Code history, in the terminal
 make brief      # render, speak and record one day
-make console    # the operator console, live on localhost
 ```
 
 ---
