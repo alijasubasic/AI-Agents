@@ -1,45 +1,84 @@
 # AI Agent Portfolio
 
-Production-minded AI agent systems built directly on the Anthropic API — no
-agent framework. The orchestration loop, tool registry, tracing, and cost
-accounting are written by hand, because that machinery is the point.
+**Eight production-minded AI agents, one supervisor that reviews all of them,
+and a live operations dashboard over the whole thing.** Built directly on the
+Anthropic API — no agent framework. The orchestration loop, tool registry,
+tracing and cost accounting are written by hand, because that machinery is the
+point.
 
-**Every agent runs with no API key and no network.** Clone it and run
-`make demo`.
+> **Clone it and run it.** Every agent works with no API key, no accounts and
+> no network. `make demo` is the whole onboarding.
 
 ```bash
 git clone https://github.com/alijasubasic/AI-Agents.git
 cd AI-Agents
 make install
-make demo
+make demo          # every agent, offline, in about a minute
+make jarvis        # the dashboard on http://127.0.0.1:8756
 ```
+
+![The operations sphere](docs/img/sphere.svg)
+
+The dashboard's centre is a force-directed graph of the whole system. It is not
+a drawing: node positions are derived from the edges, and **every edge is a
+call that exists in the code** — asserted against the agents' constructor
+signatures by [`test_graph.py`](jarvis/tests/test_graph.py), so a diagram that
+drifts from the system fails the suite.
 
 ---
 
-## Status
+## What is actually real here
 
-This repository is being built in public, one agent at a time. What is here is
-finished and tested; what is not here says so.
+The honest version, because a portfolio that overstates itself is worse than a
+small one that does not.
 
-| Component | Status |
+| | Status |
 |---|---|
-| `core/` — agent loop, tools, providers, tracing, cost | ✅ Done |
-| [`agents/email_triage`](agents/email_triage) — classify, extract, draft, escalate | ✅ Done |
-| [`agents/calendar_booking`](agents/calendar_booking) — cross-timezone slot finding and booking | ✅ Done |
-| [`agents/call_intake`](agents/call_intake) — transcript to verified record, typed delegation | ✅ Done |
-| [`agents/lead_research`](agents/lead_research) — sourced facts, every claim labelled | ✅ Done |
-| [`agents/brain`](agents/brain) — supervises every agent, writes the morning brief | ✅ Done |
-| [`console/`](console) — overlay, ElevenLabs voice, Obsidian vault | ✅ Done |
-| [`agents/knowledge_base`](agents/knowledge_base) — RAG with citations and an enforced “I don’t know” | ✅ Done |
-| [`agents/self_improving`](agents/self_improving) — evaluator/optimizer loop with a holdout | ✅ Done |
-| [`agents/improver`](agents/improver) — reviewer crew that patches this repo | ✅ Done |
-| [`evals/`](evals) — scored cases per agent, including the ones they fail | ✅ Done |
-| [`telemetry/`](telemetry) — this machine's own Claude Code history, read locally | ✅ Done |
-| [`jarvis/`](jarvis) — J.A.R.V.I.S. operations dashboard over the whole fleet | ✅ Done |
+| The agent loop, guardrails, tools, tracing, cost | **real** — written here, tested here |
+| Agent reasoning | **real** with an API key; scripted without one |
+| Supervision, codex, morning brief | **real** — deterministic rules, 100% eval coverage |
+| Claude Code telemetry | **real** — reads this machine's own transcripts |
+| Obsidian vault | **real** — a vault is a folder of Markdown files |
+| Google Calendar / Gmail / Drive | **implemented, needs your credentials** |
+| Web search, CRM | **interfaces only** — and the dashboard draws them dashed |
+
+![Three modes](docs/img/modes.svg)
+
+→ **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)** — exactly what to supply to
+connect a real account, and how to move an agent from demo to production
+without pretending.
+
+---
+
+## The fleet
+
+Eight agents. Each is a package with its own README, a runnable demo, its own
+tests, and scored eval cases — including the ones it fails.
+
+| Agent | What it does | Reaches |
+|---|---|---|
+| [**supervisor**](agents/supervisor) | Reviews every decision any agent makes against an eight-article codex, then writes the morning brief | Obsidian, Drive, voice |
+| [**email-triage**](agents/email_triage) | Classifies inbound mail, extracts action items, drafts a reply in a house voice | Gmail, CRM |
+| [**calendar-booking**](agents/calendar_booking) | Finds times across calendars and time zones, respecting working hours rather than averaging them | Google Calendar |
+| [**call-intake**](agents/call_intake) | Turns a call transcript into a verified record — and treats the transcript as data, never as instructions | — |
+| [**lead-research**](agents/lead_research) | Researches a company, cites every fact, and labels every claim it could not source | Web search |
+| [**knowledge-base**](agents/knowledge_base) | Answers from a document corpus with a citation per claim, and declines when retrieval brings back nothing separable | — |
+| [**prompt-optimizer**](agents/prompt_optimizer) | Rewrites an agent's prompt against a scored task set, with a holdout that keeps the score honest | — |
+| [**code-reviewer**](agents/code_reviewer) | Reviews this repository and proposes patches it is not allowed to merge | this repo |
+
+> **A note on three of those names.** They used to be `brain`,
+> `self_improving` and `improver`. The middle two differed by two letters,
+> did completely different things, and both exported a class called
+> `ImprovementRun` — so a reader had to check the import to know which system
+> they were looking at. `brain` named nothing it does. Renaming them was the
+> single highest-value change in this repository that involved no new
+> behaviour.
 
 ---
 
 ## Architecture
+
+![Architecture](docs/img/architecture.svg)
 
 ```mermaid
 flowchart TB
@@ -61,6 +100,8 @@ flowchart TB
     Agents["agents/*<br/><i>system prompt + tools</i>"] -->|"built on"| Loop
     Trace --> Report["Trace log<br/><i>steps · tokens · $ · latency</i>"]
 ```
+
+![The agent loop](docs/img/loop.svg)
 
 The loop itself is deliberately small:
 
@@ -221,13 +262,13 @@ a paragraph.
 python -m agents.knowledge_base.demo
 ```
 
-### [self-improving](agents/self_improving) ✅
+### [prompt-optimizer](agents/prompt_optimizer) ✅
 
 An evaluator-optimizer loop: a critic reads what a prompt got wrong, an
 optimizer rewrites it, and a gate decides whether the rewrite was actually
 better.
 
-**A self-improving loop is easy to build and easy to build wrong.** The wrong
+**A prompt-optimizer loop is easy to build and easy to build wrong.** The wrong
 version measures the rewrite on the same examples it was shown, watches the
 number rise, and reports success — having learned those examples. So the cases
 are split: the optimizer sees a **tuning** half, and acceptance is decided on a
@@ -251,10 +292,10 @@ A rejected version is not built on — hill climbing with rollback, so a bad ste
 does not compound.
 
 ```bash
-python -m agents.self_improving.demo
+python -m agents.prompt_optimizer.demo
 ```
 
-### [improver](agents/improver) ✅ — the reviewer crew
+### [code reviewer](agents/code_reviewer) ✅ — the reviewer crew
 
 Reviews this repository, proposes patches, and verifies them against a gate it
 cannot influence. Every applied patch is a branch. Nothing is merged.
@@ -265,7 +306,7 @@ loosened lint rule, a deleted eval case — each makes the next run look cleaner
 and the repository worse, and each is a change a model can rationalise. Nothing
 about the diff looks like sabotage.
 
-So every guardrail points at the improver itself. It may never modify `tests/`,
+So every guardrail points at the code reviewer itself. It may never modify `tests/`,
 `evals/`, `.github/`, the build configuration, the ADRs, or **its own package**.
 Not "is instructed not to" — cannot: the check runs before anything reaches the
 workspace.
@@ -291,16 +332,16 @@ make improve              # dry run: scan, review, report
 make improve APPLY=1      # also write patches, on branches
 ```
 
-A [weekly workflow](.github/workflows/improve.yml) runs the dry half and opens a
+A [weekly workflow](.github/workflows/review.yml) runs the dry half and opens a
 pull request with the report. Applying patches unattended on a schedule would
 mean branches appearing in a repository nobody was watching.
 
-### [brain](agents/brain) ✅ — the supervisor
+### [supervisor](agents/supervisor) ✅ — the supervisor
 
 Runs every other agent, reviews what each of them decided, and writes the
 morning brief.
 
-**The brain can only ever be more conservative than the agent it supervises.**
+**The supervisor can only ever be more conservative than the agent it supervises.**
 An oversight layer that can also *approve* is not oversight — the moment it
 talks itself past a guard that fired for good reason, the system is less safe
 with supervision than without. So `Verdict` is an ordered enum and every
@@ -310,7 +351,7 @@ promised in a prompt.
 → [ADR 0005](docs/adr/0005-monotonic-supervision.md)
 
 **The codex is executable, not a prompt.** Eight articles in
-[`codex.py`](agents/brain/codex.py) — human authority, honesty, no unbacked
+[`codex.py`](agents/supervisor/codex.py) — human authority, honesty, no unbacked
 commitments, confirmed recipient, data minimisation, fair dealing, cost
 discipline, auditability. Dishonesty and unconfirmed recipients block a
 decision outright; the rest hold it for a person, because most of what they
@@ -331,7 +372,7 @@ a person today — as Markdown and as a spreadsheet (`Summary`, `Decisions`,
 `Tasks today`, `Codex findings`).
 
 ```bash
-make brief    # or: python -m agents.brain.demo
+make brief    # or: python -m agents.supervisor.demo
 ```
 
 ---
@@ -341,12 +382,12 @@ make brief    # or: python -m agents.brain.demo
 ### [console/](console) ✅ — chat, overlay, voice and vault
 
 The layer a person actually looks at. Give an agent a task, answer the
-questions it asks back, and see what the brain made of the result.
+questions it asks back, and see what the supervisor made of the result.
 
 **It can create work. It cannot approve any.** An earlier version was strictly
 read-only, on the grounds that a display with buttons is a second path around
 the codex. The principle was right and the rule was too blunt — a task typed
-here becomes an ordinary `Decision` and goes through the same brain and the
+here becomes an ordinary `Decision` and goes through the same supervisor and the
 same codex as work an agent raised itself. So the rule is sharper and still
 testable:
 
@@ -359,7 +400,7 @@ a test failure rather than an oversight.
 **Clarification is not escalation.** Before this, agents could finish or
 escalate — which forces a bad choice on any task with a gap in it: abandon it
 to a human, or guess. `NEEDS_CLARIFICATION` is a pause, not a handover; the
-agent still owns the work and continues once told. And the brain answers first,
+agent still owns the work and continues once told. And the supervisor answers first,
 settling the questions the codex already covers rather than interrupting you
 with them.
 
@@ -422,14 +463,14 @@ and measures neither.
 
 | Agent | Cases | Passed | Score | Known gaps |
 |---|---|---|---|---|
-| brain | 14 | 14 | 100% | 3 |
+| supervisor | 14 | 14 | 100% | 3 |
 | calendar-booking | 14 | 14 | 100% | 2 |
 | call-intake | 13 | 13 | 100% | 3 |
 | email-triage | 11 | 11 | 100% | 4 |
-| improver | 26 | 26 | 100% | 3 |
+| code reviewer | 26 | 26 | 100% | 3 |
 | knowledge-base | 13 | 13 | 100% | 3 |
 | lead-research | 12 | 12 | 100% | 4 |
-| self-improving | 12 | 12 | 100% | 3 |
+| prompt-optimizer | 12 | 12 | 100% | 3 |
 | **overall** | **115** | **115** | **100%** | **25** |
 
 **100% is not the interesting number. 25 known gaps is.** A `KNOWN_GAP` case
@@ -505,23 +546,60 @@ discovered in production.
 ## Running it
 
 ```bash
-make install   # uv sync --all-extras
-make demo      # every demo, all without an API key
-make test      # pytest with coverage
-make lint      # ruff check + format --check
-make check     # everything CI runs, in the same order
+make install     # uv sync --all-extras
+make demo        # every demo, offline, no API key
+make jarvis      # the operations dashboard on 127.0.0.1:8756
+make telemetry   # this machine's own Claude Code history, in the terminal
+make brief       # run every agent and write the morning brief
+make test        # 797 tests
+make lint        # ruff check + format --check
+make eval        # 140 scored cases across eight agents
+make review      # the code reviewer, on this repository
+make check       # everything CI runs, in the same order
 ```
 
-Requires Python 3.11+, [uv](https://docs.astral.sh/uv/), and `make`.
+Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). `make` is a
+convenience, not a dependency — every target is one command you can run
+directly, e.g. `uv run python -m jarvis`.
 
-### Running against the real API
+<details>
+<summary><b>On Windows without <code>make</code></b></summary>
+
+```powershell
+cd D:\your\path\AI-Agents
+uv run python -m jarvis
+```
+
+Or install it once: `winget install --id ezwinports.make --scope user`
+</details>
+
+### Turning on real reasoning
 
 ```bash
 cp .env.example .env     # then set ANTHROPIC_API_KEY and AGENT_MODE=live
 ```
 
-Live mode is strictly opt-in. No code path reaches the network unless
-`AGENT_MODE=live` is set *and* a key is present.
+Strictly opt-in. No code path reaches the network unless `AGENT_MODE=live` is
+set **and** a key is present — and the dashboard prints which mode it got,
+because *"why does it always answer the same thing"* has exactly one cause and
+nobody should spend ten minutes finding it.
+
+### Connecting real accounts
+
+One credential covers Google Calendar, Gmail and Drive:
+
+```bash
+uv sync --extra google
+python -m integrations.google.connect    # once, opens a browser
+python -m integrations.google.check      # proves it works
+```
+
+Scopes are deliberately narrow — `drive.file` not `drive`, `gmail.modify` not
+`gmail.full` — and **sending mail is a separate opt-in scope** guarded by a
+second flag in code. Two independent switches, because a config file being
+wrong should not be able to email your customer.
+
+→ **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)** for the full checklist.
 
 ---
 
@@ -557,9 +635,14 @@ feature list.
 ```
 core/          shared runtime — loop, tools, providers, tracing, cost
 agents/        one package per agent (README + demo + tests each)
-evals/         scored test cases per agent
+console/       the chat, the vault writer, the voice
+jarvis/        the operations dashboard and its sphere
+telemetry/     this machine's own Claude Code history — the one real data source
+integrations/  live Google Calendar, Gmail and Drive
+evals/         scored test cases per agent, including the ones they fail
 docs/adr/      architecture decision records
-tests/         tests for core/
+docs/img/      the diagrams above
+tests/         tests for core/ and for the repository's own layout
 ```
 
 ---
@@ -568,47 +651,3 @@ tests/         tests for core/
 
 MIT
 
----
-
-## The operator console
-
-An Obsidian-styled workspace you can type into: give an agent a task, answer
-what it asks back, and see what the brain made of the result.
-
-```bash
-make console        # http://127.0.0.1:8756
-```
-
-**It can create work. It cannot approve any.** An earlier version of this
-console was strictly read-only, on the stated grounds that a display with
-action buttons is a second path around the codex. Adding a chat contradicts
-that, so the rule was re-examined rather than dropped. The principle was never
-"the console must be inert" — it was *nothing reaches the outside world
-unreviewed*. A task typed here becomes an ordinary `Decision` and goes through
-the same codex as work an agent raised itself.
-
-The route table is asserted directly by a test: four routes, none of which
-approves, sends, books or overrides anything.
-
-**Clarification is not escalation**, and that distinction is the idea worth
-taking from this component. Escalation means a human must *decide* — the work
-leaves the agent. Clarification means a human must *tell it something* — the
-work stays with the agent, paused. An agent that can only escalate has to
-abandon any task with a gap in it; one that guesses instead produces confident,
-wrong work.
-
-```
-you     Have a look at that company we spoke to and pull together a profile.
-agent   Which company should I research? (I could not identify one, and
-        researching the wrong one produces a profile that looks right...)
-you     Kestrel Systems
-agent   Kestrel Systems: 2 of 7 claims verified against 4 source(s).
-```
-
-**The brain answers first.** When an agent asks something, the codex is checked
-before the operator is troubled — *"may I send this to an unconfirmed
-address?"* is answered by article A4, not by a person. An assistant that
-interrupts you with questions its own rulebook settles is one you learn to
-ignore, and then you miss the question that mattered.
-
-→ [`console/CONSOLE.md`](console/CONSOLE.md)

@@ -66,16 +66,16 @@ class AgentCard(BaseModel):
 #: operate on the repository itself.
 FLEET: list[AgentCard] = [
     AgentCard(
-        name="brain",
-        title="Brain",
-        package="brain",
+        name="supervisor",
+        title="Supervisor",
+        package="supervisor",
         colour="#7c6bff",
         blurb=(
             "Supervises every other agent. Re-checks each decision against an "
             "eight-article codex and writes the morning brief."
         ),
         skills=["supervision", "codex", "morning brief"],
-        demo="agents.brain.demo",
+        demo="agents.supervisor.demo",
     ),
     AgentCard(
         name="email-triage",
@@ -141,28 +141,28 @@ FLEET: list[AgentCard] = [
         demo="agents.knowledge_base.demo",
     ),
     AgentCard(
-        name="self-improving",
-        title="Self-Improving",
-        package="self_improving",
+        name="prompt-optimizer",
+        title="Prompt Optimizer",
+        package="prompt_optimizer",
         colour="#e07be0",
         blurb=(
-            "An evaluator-optimizer loop: a critic reads what a prompt got "
-            "wrong, an optimiser rewrites it, a holdout set keeps it honest."
+            "Rewrites an agent's prompt against a scored task set: a critic "
+            "reads what went wrong, an optimiser rewrites, a holdout judges."
         ),
         skills=["critique", "rewrite", "holdout"],
-        demo="agents.self_improving.demo",
+        demo="agents.prompt_optimizer.demo",
     ),
     AgentCard(
-        name="improver",
-        title="Improver",
-        package="improver",
+        name="code-reviewer",
+        title="Code Reviewer",
+        package="code_reviewer",
         colour="#e05561",
         blurb=(
             "Reviews this repository and proposes patches it cannot merge — "
             "tests, evals and CI config are outside what it may touch."
         ),
         skills=["review", "patch", "verify"],
-        demo="agents.improver.demo",
+        demo="agents.code_reviewer.demo",
     ),
 ]
 

@@ -97,10 +97,12 @@ def run(settings: Settings | None = None) -> Dashboard:
     for request in ("Research Kestrel Systems", "What restocking fee applies to opened stock?"):
         session.submit(request)
 
-    from agents.brain import demo as brain_demo
+    from agents.supervisor import demo as supervisor_demo
 
     return build(
-        state=build_overlay_state(brain_demo.run(settings.model_copy(update={"mode": "mock"}))),
+        state=build_overlay_state(
+            supervisor_demo.run(settings.model_copy(update={"mode": "mock"}))
+        ),
         conversation=session.conversation,
         telemetry=load(),
         diagnostics=measure(settings, run_evals=True),

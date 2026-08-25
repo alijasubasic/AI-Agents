@@ -20,7 +20,6 @@ answering and the supervising.
 
 from __future__ import annotations
 
-from agents.brain.supervisor import BrainAgent
 from agents.calendar_booking.agent import CalendarBookingAgent
 from agents.calendar_booking.fixtures import ORGANISER, PEOPLE
 from agents.calendar_booking.providers import MockCalendar
@@ -29,6 +28,7 @@ from agents.knowledge_base.fixtures import CORPUS as DOCUMENTS
 from agents.lead_research.fixtures import CORPUS as RESEARCH_CORPUS
 from agents.lead_research.fixtures import REFERENCE_TODAY
 from agents.lead_research.providers import MockSearch
+from agents.supervisor.agent import SupervisorAgent
 from console.chat import ChatSession
 from console.handlers import BookingHandler, KnowledgeHandler, ResearchHandler
 from core.config import Settings
@@ -91,7 +91,7 @@ def build_live_session(settings: Settings | None = None) -> ChatSession:
             BookingHandler(booking, KNOWN_ATTENDEES),
         ],
         router_provider=AnthropicProvider(settings),
-        brain=BrainAgent(provider=AnthropicProvider(settings), settings=settings),
+        supervisor=SupervisorAgent(provider=AnthropicProvider(settings), settings=settings),
         settings=settings,
     )
 

@@ -65,7 +65,11 @@ def test_initials_are_derived_not_stored():
         AgentCard(name="lead-research", title="x", package="p", colour="#fff", blurb="").initials
         == "LR"
     )
-    assert AgentCard(name="brain", title="x", package="p", colour="#fff", blurb="").initials == "BR"
+    # A single-word name falls back to its first two letters.
+    assert (
+        AgentCard(name="supervisor", title="x", package="p", colour="#fff", blurb="").initials
+        == "SU"
+    )
 
 
 def test_every_colour_is_a_hex_value():

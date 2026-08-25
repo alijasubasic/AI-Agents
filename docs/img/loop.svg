@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" width="900" height="300" role="img" aria-label="The agent loop with four guardrails: a step ceiling, a wall-clock deadline, a per-run cost budget, and jittered-backoff retries.">
+  <style>
+    .bg{fill:#0d1117}
+    .t{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    .h{font-size:13px;font-weight:700;letter-spacing:1.6px;fill:#6b7b8d}
+    .n{font-size:13.5px;font-weight:600;fill:#e0e6ed}
+    .s{font-size:11px;fill:#8b9bad}
+    .k{font-size:10px;letter-spacing:1.2px;fill:#6b7b8d}
+    .box{fill:#12182a;stroke:#1f2b3d;stroke-width:1}
+    .flow{stroke:#00d4ff;stroke-width:2;fill:none;marker-end:url(#a)}
+    .stop{stroke:#e05561;stroke-width:1.6;fill:none;stroke-dasharray:4 3;marker-end:url(#r)}
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#00d4ff"/></marker>
+    <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#e05561"/></marker>
+  </defs>
+  <rect class="bg" width="900" height="300"/>
+  <text class="t h" x="34" y="34">THE LOOP — WRITTEN BY HAND, NOT BY A FRAMEWORK</text>
+
+  <rect class="box" x="34" y="62" width="150" height="52" rx="8"/>
+  <text class="t n" x="48" y="86">Prompt</text><text class="t s" x="48" y="103">system + tool schemas</text>
+
+  <rect class="box" x="230" y="62" width="150" height="52" rx="8"/>
+  <text class="t n" x="244" y="86">Model call</text><text class="t s" x="244" y="103">retry on 429 / 5xx</text>
+
+  <rect class="box" x="426" y="62" width="150" height="52" rx="8"/>
+  <text class="t n" x="440" y="86">Tool use?</text><text class="t s" x="440" y="103">schema-validated</text>
+
+  <rect class="box" x="622" y="62" width="180" height="52" rx="8" stroke="#44c98f"/>
+  <text class="t n" x="636" y="86" fill="#44c98f">Structured result</text><text class="t s" x="636" y="103">a pydantic model</text>
+
+  <path class="flow" d="M186 88 L 226 88"/>
+  <path class="flow" d="M382 88 L 422 88"/>
+  <path class="flow" d="M578 88 L 618 88"/>
+  <path class="flow" d="M501 116 L 501 142 L 305 142 L 305 118"/>
+  <text class="t k" x="332" y="158">RUN THE TOOL, FEED THE RESULT BACK</text>
+
+  <text class="t h" x="34" y="198">FOUR GUARDRAILS — CHECKED BETWEEN EVERY STEP</text>
+
+  <rect class="box" x="34" y="212" width="196" height="56" rx="8" stroke="#e05561"/>
+  <text class="t n" x="48" y="234">Step ceiling</text><text class="t s" x="48" y="252">8 — a loop cannot run forever</text>
+
+  <rect class="box" x="246" y="212" width="196" height="56" rx="8" stroke="#e05561"/>
+  <text class="t n" x="260" y="234">Wall-clock deadline</text><text class="t s" x="260" y="252">60s — steps say nothing about time</text>
+
+  <rect class="box" x="458" y="212" width="196" height="56" rx="8" stroke="#e05561"/>
+  <text class="t n" x="472" y="234">Cost budget</text><text class="t s" x="472" y="252">$1.00 per run, cache-aware</text>
+
+  <rect class="box" x="670" y="212" width="196" height="56" rx="8" stroke="#e05561"/>
+  <text class="t n" x="684" y="234">Jittered backoff</text><text class="t s" x="684" y="252">retries that do not synchronise</text>
+
+  <path class="stop" d="M132 208 L 132 122"/>
+  <path class="stop" d="M344 208 L 344 122"/>
+  <path class="stop" d="M556 208 L 556 122"/>
+</svg>

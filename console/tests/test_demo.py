@@ -7,7 +7,7 @@ as though it happened.
 
 from __future__ import annotations
 
-from agents.brain.models import Verdict
+from agents.supervisor.models import Verdict
 from console import demo
 from core.config import Settings
 
@@ -46,7 +46,7 @@ def test_speaking_stops_cleanly_when_the_budget_runs_out(tmp_path, monkeypatch):
 
     monkeypatch.setattr(demo, "DEFAULT_VAULT_PATH", tmp_path / "vault")
     monkeypatch.delenv("OBSIDIAN_VAULT_PATH", raising=False)
-    report = demo.brain_demo.run(_settings())
+    report = demo.supervisor_demo.run(_settings())
 
     tight = MockVoice(budget=40)
     clips = demo.speak_briefing(report, tight)

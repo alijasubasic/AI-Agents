@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from agents.brain.models import (
+from agents.supervisor.models import (
     CodexFinding,
     DailyReport,
     Decision,

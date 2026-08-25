@@ -9,7 +9,6 @@ between them is the real agents, the real codex and the real question triage.
 
 from __future__ import annotations
 
-from agents.brain.supervisor import BrainAgent
 from agents.knowledge_base.agent import KnowledgeBaseAgent
 from agents.knowledge_base.fixtures import CORPUS
 from agents.knowledge_base.scripted import provider_for as kb_provider
@@ -18,9 +17,10 @@ from agents.lead_research.fixtures import CORPUS as RESEARCH_CORPUS
 from agents.lead_research.fixtures import REFERENCE_TODAY
 from agents.lead_research.providers import MockSearch
 from agents.lead_research.scripted import provider_for as research_provider
-from console.chat import ChatSession, brain_answer
+from agents.supervisor.agent import SupervisorAgent
+from console.chat import ChatSession, supervisor_answer
 from console.handlers import KnowledgeHandler, ResearchHandler
-from console.scripted import REQUESTS, brain_provider, router_provider
+from console.scripted import REQUESTS, router_provider, supervisor_provider
 from console.tasks import Question, Speaker, TaskStatus
 from core.config import Settings
 from core.console import configure_stdout
@@ -40,7 +40,7 @@ _MARK = {
 _WHO = {
     Speaker.OPERATOR: "you   ",
     Speaker.AGENT: "agent ",
-    Speaker.BRAIN: "brain ",
+    Speaker.BRAIN: "supervisor ",
     Speaker.SYSTEM: "system",
 }
 
@@ -66,7 +66,7 @@ class _ResearchDispatcher:
 
 
 def build_session(settings: Settings | None = None) -> ChatSession:
-    """Wire the chat up to real agents and a real brain."""
+    """Wire the chat up to real agents and a real supervisor."""
     settings = settings or Settings.from_env()
 
     research = _ResearchDispatcher(settings)
@@ -80,7 +80,7 @@ def build_session(settings: Settings | None = None) -> ChatSession:
             KnowledgeHandler(knowledge),
         ],
         router_provider=router_provider(),
-        brain=BrainAgent(provider=brain_provider(), settings=settings),
+        supervisor=SupervisorAgent(provider=supervisor_provider(), settings=settings),
         settings=settings,
     )
 
@@ -123,11 +123,11 @@ def _print_tasks(session: ChatSession) -> None:
             state = f"answered: {answered[:40]}" if answered else "OPEN"
             print(f"            asked:  {question.text[:46]}  [{state}]")
         for reason in task.review_reasons:
-            print(f"            brain:  {reason[:62]}")
+            print(f"            supervisor:  {reason[:62]}")
 
 
 def _print_triage() -> None:
-    """What the brain settles without troubling the operator."""
+    """What the supervisor settles without troubling the operator."""
     probes = [
         Question(
             id="p1",
@@ -147,16 +147,16 @@ def _print_triage() -> None:
     ]
 
     print(f"\n{'=' * 78}")
-    print("Question triage — what the brain answers before you see it")
+    print("Question triage — what the supervisor answers before you see it")
     print("=" * 78)
     for question in probes:
-        settled = brain_answer(question)
+        settled = supervisor_answer(question)
         if settled is None:
             print(f"\n  -> you:   {question.text}")
             print("            (no rule covers this; it needs a person)")
         else:
             _article, ruling = settled
-            print(f"\n  -> brain: {question.text}")
+            print(f"\n  -> supervisor: {question.text}")
             print(f"            {ruling[:70]}")
 
 

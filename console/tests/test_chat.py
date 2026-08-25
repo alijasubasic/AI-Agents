@@ -1,7 +1,7 @@
 """Tests for the operator chat.
 
 Three things carry the design and get the most coverage: that a clarification
-is a pause rather than a handover, that the brain answers what the codex
+is a pause rather than a handover, that the supervisor answers what the codex
 already settles, and that a task typed into the console is reviewed exactly
 like one an agent raised itself.
 """
@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import pytest
 
-from agents.brain.models import DecisionKind, Judgement, Verdict
-from agents.brain.supervisor import BrainAgent
-from console.chat import ChatSession, RoutingDecision, brain_answer
+from agents.supervisor.agent import SupervisorAgent
+from agents.supervisor.models import DecisionKind, Judgement, Verdict
+from console.chat import ChatSession, RoutingDecision, supervisor_answer
 from console.chat_demo import build_session, run
 from console.handlers import TaskOutcome, find_company, to_decision
 from console.scripted import REQUESTS
@@ -39,8 +39,8 @@ def routes(*decisions: RoutingDecision) -> MockProvider:
     )
 
 
-def brain(count: int = 6) -> BrainAgent:
-    return BrainAgent(
+def supervisor(count: int = 6) -> SupervisorAgent:
+    return SupervisorAgent(
         provider=MockProvider(
             [text_response(Judgement().model_dump_json()) for _ in range(count)],
             model="claude-opus-5",
@@ -68,7 +68,7 @@ def session_with(handler, *decisions: RoutingDecision) -> ChatSession:
     return ChatSession(
         handlers=[handler],
         router_provider=routes(*decisions),
-        brain=brain(),
+        supervisor=supervisor(),
         settings=settings(),
     )
 
@@ -132,7 +132,9 @@ def test_an_empty_request_is_refused_without_routing():
 
 def test_a_session_needs_at_least_one_agent():
     with pytest.raises(ValueError, match="at least one agent"):
-        ChatSession(handlers=[], router_provider=routes(), brain=brain(), settings=settings())
+        ChatSession(
+            handlers=[], router_provider=routes(), supervisor=supervisor(), settings=settings()
+        )
 
 
 # --- Clarification ------------------------------------------------------
@@ -212,11 +214,11 @@ def test_several_questions_all_have_to_be_answered():
     assert task.status is TaskStatus.DONE
 
 
-# --- The brain answering first -----------------------------------------
+# --- The supervisor answering first -----------------------------------------
 
 
 def test_the_brain_settles_a_policy_question_without_asking_the_operator():
-    settled = brain_answer(
+    settled = supervisor_answer(
         Question(
             id="q",
             text="May I send this to the address even though it is unconfirmed?",
@@ -231,7 +233,7 @@ def test_the_brain_settles_a_policy_question_without_asking_the_operator():
 
 def test_a_question_no_rule_covers_goes_to_the_operator():
     assert (
-        brain_answer(
+        supervisor_answer(
             Question(
                 id="q",
                 text="Which of the two Berlin warehouses ships this?",
@@ -258,7 +260,7 @@ def test_a_settled_question_never_reaches_the_operator():
 
 
 def test_a_settled_question_is_still_recorded():
-    # Answered by the brain, not erased — the exchange stays in the transcript
+    # Answered by the supervisor, not erased — the exchange stays in the transcript
     # and the ruling reaches the agent's next briefing.
     policy_question = Question(
         id="q1", text="Can I quote the price?", why="They asked for a discount."

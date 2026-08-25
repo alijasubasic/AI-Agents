@@ -22,7 +22,7 @@ from console.briefing import (
     spoken_date,
     spoken_number,
 )
-from console.chat import ChatSession, RoutingDecision, brain_answer
+from console.chat import ChatSession, RoutingDecision, supervisor_answer
 from console.handlers import (
     BookingHandler,
     KnowledgeHandler,
@@ -99,7 +99,7 @@ __all__ = [
     "VaultNote",
     "VaultWriter",
     "VoiceProvider",
-    "brain_answer",
+    "supervisor_answer",
     "build_handler",
     "build_notes",
     "build_overlay_state",

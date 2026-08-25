@@ -20,6 +20,13 @@ dependencies = [
 # Writing the morning brief as a real .xlsx workbook. Optional: the brief also
 # writes as CSV with no dependencies at all, which is what `make demo` uses.
 xlsx = ["openpyxl>=3.1"]
+# Live Google Calendar, Gmail and Drive. Optional on purpose: a fresh clone
+# with no accounts must still run every demo, so nothing imports these at
+# module load and every agent keeps its mock until an account is connected.
+google = [
+    "google-api-python-client>=2.140",
+    "google-auth-oauthlib>=1.2",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
@@ -53,5 +60,5 @@ select = [
 # any is a test root. Adding a package here is not optional: a directory left
 # off this list is collected by `pytest <dir>` and silently skipped by CI,
 # which is the worst of both — the tests pass locally and never run.
-testpaths = ["tests", "agents", "console", "evals", "telemetry", "jarvis"]
+testpaths = ["tests", "agents", "console", "evals", "telemetry", "jarvis", "integrations"]
 addopts = "-q"

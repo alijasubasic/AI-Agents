@@ -1,7 +1,7 @@
 # The operator console
 
 An Obsidian-styled workspace you can type into: give an agent a task, answer
-the questions it asks back, and see what the brain made of the result.
+the questions it asks back, and see what the supervisor made of the result.
 
 ```bash
 make console                       # http://127.0.0.1:8756
@@ -19,7 +19,7 @@ re-examined rather than quietly dropped.
 
 The principle was never "the console must be inert". It was **nothing reaches
 the outside world unreviewed**. A task typed here becomes an ordinary
-`Decision` and goes through the same brain and the same codex as work an agent
+`Decision` and goes through the same supervisor and the same codex as work an agent
 raised on its own — so the sharper rule is:
 
 > The console may create work; it has no route that approves any.
@@ -56,7 +56,7 @@ agent asks rather than profiling whichever one it saw first:
 
 ```
 you     Have a look at that company we spoke to and pull together a profile.
-brain   Routed to lead-research — asks for a profile, though not which company
+supervisor   Routed to lead-research — asks for a profile, though not which company
 agent   Which company should I research? (I could not identify one in the ...)
 you     Kestrel Systems
 agent   Kestrel Systems: 2 of 7 claims verified against 4 source(s).
@@ -67,13 +67,13 @@ labelled heading rather than merged into the request, so nothing in a reply can
 be mistaken for the original task. Answering a question twice changes nothing —
 a second reply must not be able to steer the agent somewhere else.
 
-## The brain answers first
+## The supervisor answers first
 
-When an agent asks something, the brain looks at the question before the
+When an agent asks something, the supervisor looks at the question before the
 operator does, and answers the ones the codex already settles.
 
 ```
--> brain: May I send this to the address, even though it is unconfirmed?
+-> supervisor: May I send this to the address, even though it is unconfirmed?
           A4 Confirmed recipient: No. Nothing may be sent to an address
           nobody confirmed.
 
@@ -83,7 +83,7 @@ operator does, and answers the ones the codex already settles.
 
 An assistant that interrupts you with a question its own rulebook answers is
 one you learn to ignore, and once you ignore it you miss the question that
-mattered. The matching is deterministic — a brain that *decided* whether to
+mattered. The matching is deterministic — a supervisor that *decided* whether to
 interrupt would interrupt inconsistently.
 
 Settled questions are still recorded with their answer, so the exchange stays
@@ -139,7 +139,7 @@ coin flip. No company named is a question.
   agent run looks like nothing happening. Server-sent events would fix it.
 - **A task runs synchronously inside the POST.** A slow agent holds the request
   open, and the browser's timeout, not the agent's, decides when to give up.
-- **`brain_answer` is four regexes.** It covers the articles most likely to be
+- **`supervisor_answer` is four regexes.** It covers the articles most likely to be
   asked about and will miss a policy question phrased unusually — in which case
   the operator is asked, which is the safe direction to fail.
 - **Only three agents are reachable.** `email-triage` and `call-intake` work on

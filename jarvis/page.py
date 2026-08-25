@@ -2,15 +2,22 @@
 
 No framework, no build step, no CDN — the server's Content-Security-Policy
 forbids every external origin and a test asserts the page contains no `https://`
-at all. Everything it can do is in this file, which is what makes it reviewable
-in an afternoon.
+at all. Everything it can do is in this file and `sphere.py`, which is what
+makes it reviewable in an afternoon.
 
-Two properties this page is built to keep, both of them security properties
-rather than style ones:
+The layout has one centre and everything else reports to it. The
+[operations sphere](sphere.py) is the top of the page: the supervisor in the
+middle, the agents around it, the outside systems on the rim, and every edge a
+call that exists in the code. Clicking a node explains it. The readouts below —
+fleet, sessions, activity, diagnostics — are detail for whatever the sphere
+just told you.
+
+Two properties this page is built to keep, both security properties rather
+than style ones:
 
 **Nothing is ever inserted as markup.** Every value that came from a model, a
-transcript or a person goes through `text()`, which sets `textContent`. The
-page builds nodes; it never concatenates a string into `innerHTML`.
+transcript or a person is set with `textContent`. The page builds nodes; it
+never concatenates a string into `innerHTML`.
 
 **No handler is written into an attribute.** The earlier console generated
 `onclick="answer('${id}', ...)"`, which puts data inside a JavaScript string
@@ -26,9 +33,10 @@ import html
 import json
 
 from jarvis.panels import Dashboard
+from jarvis.sphere import SPHERE_JS
 from jarvis.styles import stylesheet
 
-_JS = r"""
+_JS_APP = r"""
 'use strict';
 const $ = (id) => document.getElementById(id);
 let STATE = null;
@@ -44,13 +52,12 @@ function el(tag, cls, text) {
 }
 function fill(id, nodes) {
   const host = $(id);
+  if (!host) return;
   host.replaceChildren(...(Array.isArray(nodes) ? nodes : [nodes]));
 }
 function none(message) { return el('div', 'empty', message); }
 function num(value) { return Number(value || 0).toLocaleString(); }
 function money(value) { return '$' + Number(value || 0).toFixed(2); }
-
-// --- clock ---------------------------------------------------------------
 
 function tick() {
   const now = new Date();
@@ -64,9 +71,8 @@ function tick() {
 function renderHeader(state) {
   $('subheading').textContent = state.subheading || '';
   const pills = [];
-  const mode = el('span', 'pill ' + (state.mode === 'live' ? 'live' : 'on'),
-                  state.mode === 'live' ? 'live · ' + state.model : 'mock · no network');
-  pills.push(mode);
+  pills.push(el('span', 'pill ' + (state.mode === 'live' ? 'live' : 'on'),
+    state.mode === 'live' ? 'live · ' + state.model : 'mock · no network'));
   pills.push(el('span', 'pill', state.open_tasks + ' open'));
   pills.push(el('span', 'pill ok', state.approved + ' approved'));
   if (state.held) pills.push(el('span', 'pill hold', state.held + ' held'));
@@ -76,7 +82,7 @@ function renderHeader(state) {
 
 function renderStream(state) {
   if (!state.turns.length) {
-    fill('stream', none('Nothing yet. Give an agent something to do.'));
+    fill('stream', none('Nothing yet. Pick a node, or type a task below.'));
     return;
   }
   fill('stream', state.turns.map((turn) => {
@@ -103,11 +109,11 @@ function renderQuestions(state) {
       button.dataset.answer = option;
       row.appendChild(button);
     });
-    const box2 = el('input');
-    box2.placeholder = 'or type an answer';
-    box2.dataset.task = question.task_id;
-    box2.dataset.question = question.id;
-    row.appendChild(box2);
+    const free = el('input');
+    free.placeholder = 'or type an answer';
+    free.dataset.task = question.task_id;
+    free.dataset.question = question.id;
+    row.appendChild(free);
     box.appendChild(row);
     return box;
   }));
@@ -117,6 +123,7 @@ function renderFleet(state) {
   fill('fleet', state.fleet.map((member) => {
     const card = el('div', 'agent');
     card.style.setProperty('--c', member.colour);
+    card.dataset.node = member.name;
     card.appendChild(el('span', 'status ' + member.tone));
 
     const head = el('div', 'head');
@@ -132,7 +139,7 @@ function renderFleet(state) {
     const tags = el('div', 'tags');
     member.skills.forEach((skill) => tags.appendChild(el('span', 'tag', skill)));
     tags.appendChild(el('span', 'tag' + (member.reachable ? ' on' : ''),
-                        member.reachable ? 'chat' : 'fixtures only'));
+      member.reachable ? 'takes free text' : 'fixtures only'));
     card.appendChild(tags);
     return card;
   }));
@@ -149,7 +156,7 @@ function renderSessions(state) {
     const middle = el('div');
     middle.appendChild(el('div', null, session.project + ' — ' + session.doing));
     middle.appendChild(el('div', 'sub', session.session_id + ' · ' +
-                          (session.model || 'model unknown')));
+      (session.model || 'model unknown')));
     line.appendChild(middle);
     line.appendChild(el('span', 'age', session.age));
     return line;
@@ -166,7 +173,7 @@ function renderAnalytics(state) {
 
   fill('totals', [
     ['sessions', num(a.sessions), 'last ' + a.window_days + ' days'],
-    ['messages', num(a.messages), 'assistant turns and replies'],
+    ['messages', num(a.messages), 'turns, deduplicated'],
     ['tool calls', num(a.tool_calls), 'blocks, not turns'],
     ['tokens', num(a.tokens), 'cache reads included'],
     ['spend', money(a.cost_usd), 'list price, cache-aware'],
@@ -191,7 +198,7 @@ function renderAnalytics(state) {
     const cell = el('div', 'cell');
     cell.style.opacity = day.level ? String(0.18 + day.level * 0.82) : '0.06';
     cell.title = day.day + ' — ' + day.messages + ' messages, ' +
-                 day.sessions + ' session(s)';
+      day.sessions + ' session(s)';
     cells.push(cell);
   });
   fill('heat', cells);
@@ -214,9 +221,9 @@ function renderAnalytics(state) {
     top.appendChild(el('span', null, share.percent + '% · ' + money(share.cost_usd)));
     box.appendChild(top);
     const track = el('div', 'track');
-    const fillBar = el('div', 'fill ' + share.family);
-    fillBar.style.width = Math.max(2, share.percent) + '%';
-    track.appendChild(fillBar);
+    const bar = el('div', 'fill ' + share.family);
+    bar.style.width = Math.max(2, share.percent) + '%';
+    track.appendChild(bar);
     box.appendChild(track);
     return box;
   }) : none('nothing to split'));
@@ -237,13 +244,13 @@ function renderDecisions(state) {
     const box = el('div', 'card ' + card.tone);
     box.appendChild(el('div', 'who', card.agent));
     box.appendChild(el('div', null, card.subject));
-    (card.reasons || []).forEach((reason) =>
-      box.appendChild(el('div', 'why', reason)));
+    (card.reasons || []).forEach((reason) => box.appendChild(el('div', 'why', reason)));
     return box;
   }) : none('No decisions yet.'));
 }
 
 function render(state) {
+  const firstRender = STATE === null;
   STATE = state;
   renderHeader(state);
   renderQuestions(state);
@@ -253,15 +260,23 @@ function render(state) {
   renderAnalytics(state);
   renderChecks(state);
   renderDecisions(state);
+
+  if (state.graph) {
+    renderSphere(state.graph);
+    describeNode(Sphere.selected || 'supervisor');
+    if (firstRender) { /* the sphere seeds itself deterministically */ }
+  }
 }
 
 // --- talking to the server ----------------------------------------------
 
 function working(on, message) {
   busy = on;
-  $('reactor').classList.toggle('busy', on);
+  const orb = $('sphere');
+  if (orb) orb.classList.toggle('busy', on);
   $('status').textContent = message || '';
   $('send').disabled = on;
+  if (on) nudge(0.7);
 }
 
 async function post(url, body) {
@@ -306,8 +321,8 @@ function submit() {
 async function capture() {
   const body = $('capture-body').value.trim();
   if (!body) return;
-  const title = $('capture-title').value.trim();
-  const done = await post('/api/capture', {title: title, body: body});
+  const done = await post('/api/capture', {
+    title: $('capture-title').value.trim(), body: body});
   if (done) {
     $('capture-body').value = '';
     $('capture-title').value = '';
@@ -317,14 +332,20 @@ async function capture() {
 
 // --- one delegated listener, no handlers in attributes -------------------
 
+function nodeUnder(target) {
+  const carrier = target.closest ? target.closest('[data-node]') : null;
+  return carrier ? carrier.dataset.node : null;
+}
+
 document.addEventListener('click', (event) => {
   const target = event.target;
-  if (!(target instanceof HTMLElement)) return;
+  if (!(target instanceof Element)) return;
   if (target.id === 'send') return submit();
   if (target.id === 'capture') return capture();
-  if (target.id === 'reactor' || target.closest('#reactor')) {
-    return $('request').focus();
-  }
+
+  const node = nodeUnder(target);
+  if (node) return selectNode(node);
+
   if (target.dataset && target.dataset.answer !== undefined) {
     post('/api/answer', {
       task_id: target.dataset.task,
@@ -334,10 +355,26 @@ document.addEventListener('click', (event) => {
   }
 });
 
+document.addEventListener('mouseover', (event) => {
+  if (!(event.target instanceof Element)) return;
+  const node = nodeUnder(event.target);
+  if (node !== Sphere.hovered) { Sphere.hovered = node; draw(); }
+});
+
 document.addEventListener('keydown', (event) => {
-  if (event.key !== 'Enter') return;
   const target = event.target;
-  if (!(target instanceof HTMLElement)) return;
+  if (!(target instanceof Element)) return;
+
+  if (event.key === 'Escape') {
+    Sphere.selected = null; describeNode('supervisor'); draw(); return;
+  }
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+
+  if (target.dataset && target.dataset.node) {
+    event.preventDefault();
+    return selectNode(target.dataset.node);
+  }
+  if (event.key !== 'Enter') return;
   if (target.id === 'request') { event.preventDefault(); return submit(); }
   if (target.dataset && target.dataset.question && target.tagName === 'INPUT') {
     event.preventDefault();
@@ -347,6 +384,14 @@ document.addEventListener('keydown', (event) => {
       text: target.value,
     });
   }
+});
+
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (STATE && STATE.graph) { renderSphere(STATE.graph); }
+  }, 180);
 });
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -366,11 +411,6 @@ _TEMPLATE = """<!doctype html>
 <div class="shell">
 
   <header class="top">
-    <button class="reactor" id="reactor" type="button"
-            aria-label="Focus the command box">
-      <span class="ring"></span><span class="glow"></span><span class="core"></span>
-      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-    </button>
     <div class="brand">
       <h1>J.A.R.V.I.S.</h1>
       <p id="subheading"></p>
@@ -384,7 +424,7 @@ _TEMPLATE = """<!doctype html>
   </header>
 
   <nav class="nav">
-    <a href="#ops">Ops</a>
+    <a href="#operations">Operations</a>
     <a href="#fleet-panel">Fleet</a>
     <a href="#sessions-panel">Sessions</a>
     <a href="#telemetry">Telemetry</a>
@@ -393,29 +433,44 @@ _TEMPLATE = """<!doctype html>
     <a href="/workspace">Plain console</a>
   </nav>
 
-  <div class="grid">
+  <section class="panel wide" id="operations" style="--edge: var(--accent)">
+    <h2>Operations sphere
+      <span class="note">every edge is a call that exists in the code</span></h2>
+    <div class="hero">
 
-    <section class="panel" id="ops" style="--edge: var(--accent)">
-      <h2>Communication link <span class="note">type a task, answer what it asks back</span></h2>
-      <div class="reactor-wrap" style="margin-bottom:14px">
-        <div class="say">
-          <b>Give an agent something to do.</b>
-          Three agents take free text: lead-research, knowledge-base and
-          calendar-booking. Anything else gets a question back rather than a guess.
+      <div class="orb-wrap">
+        <div id="sphere"></div>
+        <div class="legend">
+          <span class="l-reviews"><i></i> supervisor reviews</span>
+          <span class="l-delegates"><i></i> typed handoff</span>
+          <span class="l-uses"><i></i> uses a system</span>
+          <span>dashed ring = not connected yet</span>
         </div>
       </div>
-      <div id="asks"></div>
-      <div class="stream" id="stream"></div>
-      <div class="composer">
-        <input id="request" placeholder="Research Kestrel Systems…"
-               autocomplete="off">
-        <button id="send" type="button">Send</button>
+
+      <div class="hero-side">
+        <div id="node-detail" class="node-detail"></div>
+        <div id="asks"></div>
+        <div class="stream" id="stream"></div>
+        <div class="composer">
+          <input id="request" placeholder="Research Kestrel Systems…" autocomplete="off">
+          <button id="send" type="button">Send</button>
+        </div>
+        <div class="hint" id="status"></div>
+        <div class="hint">
+          This console can create work. It has no control that approves any —
+          every result goes through the codex.
+        </div>
       </div>
-      <div class="hint" id="status"></div>
-      <div class="hint">
-        This console can create work. It has no control that approves any —
-        every result goes through the codex.
-      </div>
+
+    </div>
+  </section>
+
+  <div class="grid">
+
+    <section class="panel wide" id="fleet-panel" style="--edge: var(--accent)">
+      <h2>Agent fleet <span class="note">runs in this process — not the sessions below</span></h2>
+      <div class="fleet" id="fleet"></div>
     </section>
 
     <section class="panel" id="diagnostics" style="--edge: var(--ok)">
@@ -424,18 +479,13 @@ _TEMPLATE = """<!doctype html>
     </section>
 
     <section class="panel" style="--edge: var(--purple)">
-      <h2>Decisions <span class="note">what the brain made of it</span></h2>
+      <h2>Decisions <span class="note">what the supervisor made of it</span></h2>
       <div id="cards"></div>
-    </section>
-
-    <section class="panel wide" id="fleet-panel" style="--edge: var(--accent)">
-      <h2>Agent fleet <span class="note">in this process — not the sessions below</span></h2>
-      <div class="fleet" id="fleet"></div>
     </section>
 
     <section class="panel wide" id="sessions-panel" style="--edge: var(--warn)">
       <h2>Live sessions
-        <span class="note">Claude Code on this machine, read from its own transcripts</span></h2>
+        <span class="note">Claude Code on this machine, from its own transcripts</span></h2>
       <div class="rows" id="sessions"></div>
     </section>
 
@@ -444,15 +494,11 @@ _TEMPLATE = """<!doctype html>
       <div class="stats" id="totals"></div>
       <div class="two" style="margin-top:16px">
         <div>
-          <div class="k" style="font-size:10px;letter-spacing:.13em;
-               text-transform:uppercase;color:var(--muted);margin-bottom:9px">
-            Daily messages</div>
+          <div class="minihead">Daily messages</div>
           <div class="heat" id="heat"></div>
         </div>
         <div>
-          <div class="k" style="font-size:10px;letter-spacing:.13em;
-               text-transform:uppercase;color:var(--muted);margin-bottom:9px">
-            Hour of day</div>
+          <div class="minihead">Hour of day</div>
           <div class="bars" id="hours"></div>
           <div class="axis"><span>00</span><span>06</span><span>12</span>
             <span>18</span><span>23</span></div>
@@ -476,6 +522,7 @@ _TEMPLATE = """<!doctype html>
   </div>
 </div>
 <script>const BOOTSTRAP = {bootstrap};</script>
+<script>{sphere_js}</script>
 <script>{js}</script>
 </body></html>
 """
@@ -499,9 +546,9 @@ def embed_json(payload: dict) -> str:
 
 def render_dashboard(dashboard: Dashboard) -> str:
     """The whole dashboard as one self-contained HTML page."""
-    # Escaped rather than trusted: the capture target is a filesystem path
-    # from the environment, and it is the one value on this page that reaches
-    # the markup instead of going through `textContent`.
+    # Escaped rather than trusted: the capture target is a filesystem path from
+    # the environment, and it is the one value on this page that reaches the
+    # markup instead of going through `textContent`.
     note = (
         "writes into " + html.escape(dashboard.capture_target)
         if dashboard.capture_target
@@ -509,7 +556,8 @@ def render_dashboard(dashboard: Dashboard) -> str:
     )
     return _TEMPLATE.format(
         css=stylesheet(),
-        js=_JS,
+        sphere_js=SPHERE_JS,
+        js=_JS_APP,
         capture_note=note,
         bootstrap=embed_json(dashboard.model_dump(mode="json")),
     )

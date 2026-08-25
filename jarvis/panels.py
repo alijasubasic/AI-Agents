@@ -25,6 +25,7 @@ from pydantic import BaseModel, Field
 from console.models import OverlayState
 from console.tasks import Conversation, TaskStatus
 from jarvis.diagnostics import Diagnostics
+from jarvis.graph import Connection, Graph, build_graph
 from jarvis.registry import FLEET, AgentCard
 from telemetry.models import Telemetry
 
@@ -125,6 +126,9 @@ class Dashboard(BaseModel):
     approved: int = 0
     held: int = 0
     blocked: int = 0
+
+    #: The operations sphere: nodes, edges and what is actually connected.
+    graph: Graph | None = None
 
     #: Where quick capture writes, or "" when capture is unavailable.
     capture_target: str = ""
@@ -245,9 +249,17 @@ def build(
     mode: str = "mock",
     model: str = "",
     capture_target: str = "",
+    connected: dict[str, Connection] | None = None,
 ) -> Dashboard:
-    """One dashboard, from the four things it is made of."""
+    """One dashboard, from the things it is made of.
+
+    `connected` describes what is wired up on *this* machine, and it comes from
+    the caller rather than from the graph module. `jarvis.graph` knows what the
+    repository implements; only `jarvis.app` knows whether a vault path exists
+    or a Google token is on disk, and the picture should show the second.
+    """
     chat = conversation_panel(state, conversation)
+    fleet = fleet_panel(conversation)
     subheading = (
         f"{telemetry.window_days}-day history from {telemetry.source}"
         if telemetry.real
@@ -259,7 +271,12 @@ def build(
         subheading=subheading,
         mode=mode,
         model=model,
-        fleet=fleet_panel(conversation),
+        fleet=fleet,
+        graph=build_graph(
+            tasks_by_agent={m.name: m.tasks for m in fleet},
+            tone_by_agent={m.name: m.tone for m in fleet},
+            connected=connected,
+        ),
         sessions=sessions_panel(telemetry),
         analytics=analytics_panel(telemetry),
         checks=[check.model_dump() for check in diagnostics.checks],

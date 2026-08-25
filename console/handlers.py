@@ -19,7 +19,7 @@ from typing import Protocol
 
 from pydantic import BaseModel, Field
 
-from agents.brain.models import Decision, DecisionKind
+from agents.supervisor.models import Decision, DecisionKind
 from console.tasks import Question, Task
 
 
@@ -27,7 +27,7 @@ class TaskOutcome(BaseModel):
     """What an agent produced for one task.
 
     Shaped so it can become a `Decision` without the caller knowing which agent
-    made it — the brain reviews chat-initiated work exactly as it reviews
+    made it — the supervisor reviews chat-initiated work exactly as it reviews
     everything else.
     """
 
@@ -64,7 +64,7 @@ class TaskHandler(Protocol):
 
 
 def to_decision(task: Task, outcome: TaskOutcome) -> Decision:
-    """Turn a finished task into something the brain can review.
+    """Turn a finished task into something the supervisor can review.
 
     Every field the codex inspects comes from the outcome rather than from the
     chat, so a task submitted through the overlay is indistinguishable from one

@@ -1,0 +1,78 @@
+name: Weekly improvement review
+
+# Runs the improvement agent over the repository once a week and opens a pull
+# request with what it found.
+#
+# It runs in **dry-run mode**: it scans, reviews and reports, and writes no
+# patches. Applying patches unattended on a schedule would mean branches
+# appearing in a repository nobody was watching, and the point of this agent is
+# that a person decides. `make improve APPLY=1` is the deliberate, local action.
+#
+# The job needs ANTHROPIC_API_KEY. Without it the review step is skipped and
+# the workflow succeeds having done the free half — the scan — so a fork
+# without secrets does not show a permanent red cross.
+
+on:
+  schedule:
+    # Mondays at 06:00 UTC, so the report is waiting at the start of the week.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "How many files to review"
+        default: "3"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  review:
+    name: Review and report
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Scan (always runs, needs no key)
+        run: uv run python -m agents.code_reviewer --limit ${{ github.event.inputs.limit || 3 }}
+
+      - name: Review and write the log
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AGENT_MODE: live
+        run: |
+          uv run python -m agents.code_reviewer \
+            --limit ${{ github.event.inputs.limit || 3 }} \
+            --log
+
+      - name: Open a pull request with the report
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: improve/weekly-report
+          # One branch, reused. A new branch every week would leave a year of
+          # stale report PRs nobody closed.
+          title: "Weekly improvement review"
+          commit-message: "docs(code reviewer): weekly review"
+          body: |
+            The improvement agent reviewed this repository and wrote its
+            findings to `docs/improvement-log.md`.
+
+            **No code was changed.** This pull request contains the report
+            only. To act on a finding, run `make improve APPLY=1` locally,
+            which writes one branch per patch and still merges nothing.
+          add-paths: |
+            docs/improvement-log.md

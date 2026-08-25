@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from agents.brain import demo as brain_demo
+from agents.supervisor import demo as supervisor_demo
 from console.briefing import build_overlay_state
 from console.chat_demo import build_session
 from console.models import VaultNote
@@ -33,7 +33,7 @@ def settings() -> Settings:
 
 @pytest.fixture(scope="module")
 def overlay():
-    return build_overlay_state(brain_demo.run(Settings(trace_enabled=False)))
+    return build_overlay_state(supervisor_demo.run(Settings(trace_enabled=False)))
 
 
 @pytest.fixture(scope="module")
@@ -199,8 +199,9 @@ def test_a_script_tag_in_a_task_cannot_close_the_bootstrap_block(overlay, diagno
 
     assert "</script><img" not in page
     assert "\\u003c/script\\u003e" in page
-    # Exactly the two script blocks the template defines, and no more.
-    assert page.count("<script>") == 2
+    # Exactly the three script blocks the template defines — bootstrap, the
+    # sphere, the app — and no more. A fourth means data closed one early.
+    assert page.count("<script>") == 3
 
 
 def test_embed_json_round_trips():

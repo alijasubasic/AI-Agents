@@ -285,7 +285,7 @@ def _() -> Score:
     note=(
         "lead-research verifies claims against sources and call-intake verifies "
         "them against the transcript. The triage draft goes out unchecked; only "
-        "the brain's codex looks at it, and only for claims it was told about."
+        "the supervisor's codex looks at it, and only for claims it was told about."
     ),
 )
 def _() -> Score:

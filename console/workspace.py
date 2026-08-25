@@ -3,7 +3,7 @@
 Three panes, laid out the way Obsidian lays out a vault — a sidebar of what
 exists, a main pane you work in, and a right pane of context.
 
-    agents & tasks  |  conversation  |  what the brain decided
+    agents & tasks  |  conversation  |  what the supervisor decided
 
 Self-contained: one HTML string, no framework, no CDN, no build step. It polls
 a JSON endpoint and posts to two others. Everything it can do is in this file,
@@ -78,7 +78,7 @@ h2 { font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
 .turn.operator { align-self: flex-end; background: var(--accent-dim);
                  border-color: var(--accent); }
 .turn.operator .who { color: #e5dbff; }
-.turn.brain { border-left: 3px solid var(--accent); }
+.turn.supervisor { border-left: 3px solid var(--accent); }
 .turn.system { color: var(--muted); font-size: 12px; }
 
 .ask { border: 1px solid var(--accent); background: rgba(168,130,255,.09);

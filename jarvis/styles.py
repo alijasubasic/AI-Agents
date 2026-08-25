@@ -134,7 +134,7 @@ body::before {
              color: var(--muted); margin-bottom: 4px; }
 .turn.operator { align-self: flex-end; background: rgba(0,212,255,.1);
                  border-color: var(--accent-dim); }
-.turn.brain { border-left: 3px solid var(--purple); }
+.turn.supervisor { border-left: 3px solid var(--purple); }
 .turn.system { color: var(--muted); font-size: 12px; background: none;
                border-style: dashed; }
 
@@ -248,8 +248,75 @@ textarea { resize: vertical; min-height: 62px; width: 100%; }
              color: var(--muted); }
 .card .why { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
 
+/* --- the operations sphere ------------------------------------------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+        gap: 18px; align-items: stretch; }
+.orb-wrap { position: relative; display: grid; place-items: center;
+            min-height: 380px; padding: 6px 0 2px; }
+#sphere { width: 100%; display: grid; place-items: center; }
+.orb { width: 100%; height: auto; max-width: 720px; overflow: visible;
+       filter: drop-shadow(0 0 40px rgba(0, 212, 255, 0.10)); }
+
+.orb-rim { fill: radial-gradient(circle, transparent, transparent);
+           fill: rgba(0, 212, 255, 0.022);
+           stroke: var(--accent-dim); stroke-width: 1;
+           stroke-dasharray: 3 9; transform-origin: center;
+           animation: orbspin 90s linear infinite; }
+.orb-ring { fill: none; stroke: var(--line-soft); stroke-width: 1; }
+@keyframes orbspin { to { transform: rotate(360deg); } }
+
+.edge { stroke-width: 1.1; transition: opacity .22s; }
+.edge-reviews   { stroke: var(--purple); stroke-dasharray: 2 5; }
+.edge-delegates { stroke: var(--accent); stroke-width: 1.5; }
+.edge-uses      { stroke: var(--muted); }
+.edge-operates  { stroke: var(--text); stroke-width: 1.6; }
+
+.orb-node { cursor: pointer; transition: opacity .22s; }
+.orb-node:focus-visible { outline: none; }
+.orb-node .disc { stroke: var(--bg); stroke-width: 2; transition: r .18s; }
+.orb-node .halo { opacity: .16; animation: haloPulse 3.2s ease-in-out infinite; }
+.orb-node .pending { fill: none; stroke-width: 1; stroke-dasharray: 2 4; opacity: .6; }
+.orb-node .orb-label { fill: var(--muted); font-size: 10.5px; text-anchor: middle;
+                       letter-spacing: .04em; pointer-events: none;
+                       paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.orb-node.kind-supervisor .orb-label { fill: var(--text); font-size: 12px;
+                                       font-weight: 600; letter-spacing: .1em; }
+.orb-node:hover .disc, .orb-node.is-focus .disc { stroke: var(--accent); }
+.orb-node.is-focus .orb-label { fill: var(--text); }
+.orb-node:focus-visible .disc { stroke: var(--accent); stroke-width: 3; }
+@keyframes haloPulse { 0%,100% { opacity: .10; } 50% { opacity: .30; } }
+
+.legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+          margin-top: 6px; font-size: 10.5px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 16px; height: 0; border-top: 1.5px solid currentColor;
+            display: inline-block; }
+.legend .l-reviews { color: var(--purple); }
+.legend .l-delegates { color: var(--accent); }
+.legend .l-uses { color: var(--muted); }
+
+/* --- node detail ------------------------------------------------------ */
+.nd-head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 8px; }
+.nd-dot { width: 10px; height: 10px; border-radius: 50%; flex: none;
+          align-self: center; }
+.nd-name { font-size: 16px; font-weight: 600; }
+.nd-kind { font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+           color: var(--dim); }
+.nd-detail { margin: 0 0 10px; font-size: 12.5px; color: var(--muted);
+             line-height: 1.5; }
+.nd-status { display: flex; align-items: center; gap: 7px; font-size: 12px;
+             margin-bottom: 6px; }
+.nd-status.tone-ok { color: var(--ok); }
+.nd-status.tone-hold { color: var(--hold); }
+.nd-status.tone-dim { color: var(--dim); }
+.nd-sub { font-size: 11.5px; color: var(--dim); margin-bottom: 5px; }
+.nd-edges { margin-top: 11px; border-top: 1px solid var(--line-soft);
+            padding-top: 9px; }
+.nd-edge { font-size: 11.5px; color: var(--muted); padding: 2px 0;
+           font-variant-numeric: tabular-nums; }
+
 @media (max-width: 1080px) {
-  .grid, .two { grid-template-columns: 1fr; }
+  .grid, .two, .hero { grid-template-columns: 1fr; }
   .reactor-wrap { flex-direction: column; text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) {

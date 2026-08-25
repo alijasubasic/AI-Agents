@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="900" height="470" role="img" aria-label="Architecture: the operator console creates work, the supervisor reviews every agent decision against an eight-article codex, and only approved work reaches an outside system.">
+  <style>
+    .bg{fill:#0d1117}
+    .t{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    .h{font-size:13px;font-weight:700;letter-spacing:1.6px;fill:#6b7b8d}
+    .n{font-size:14px;font-weight:600;fill:#e0e6ed}
+    .s{font-size:11.5px;fill:#8b9bad}
+    .k{font-size:10px;letter-spacing:1.2px;fill:#6b7b8d}
+    .box{fill:#12182a;stroke:#1f2b3d;stroke-width:1;rx:9}
+    .edge{stroke:#3a4553;stroke-width:1.4;fill:none}
+    .flow{stroke:#00d4ff;stroke-width:2;fill:none}
+    .gate{stroke:#7c6bff;stroke-width:2;fill:none;stroke-dasharray:4 4}
+  </style>
+  <rect class="bg" width="900" height="470"/>
+
+  <text class="t h" x="34" y="34">ONE PATH OUT, AND IT GOES THROUGH REVIEW</text>
+
+  <!-- operator -->
+  <rect class="box" x="34" y="62" width="176" height="66" rx="9"/>
+  <text class="t k" x="48" y="84">YOU</text>
+  <text class="t n" x="48" y="104">Operator console</text>
+  <text class="t s" x="48" y="120">creates work · approves nothing</text>
+
+  <!-- agents -->
+  <text class="t k" x="290" y="80">EIGHT AGENTS · RUN IN ONE PROCESS</text>
+  <g>
+    <rect class="box" x="290" y="92" width="150" height="40" rx="8"/><text class="t n" x="304" y="117">email-triage</text>
+    <rect class="box" x="452" y="92" width="150" height="40" rx="8"/><text class="t n" x="466" y="117">calendar-booking</text>
+    <rect class="box" x="290" y="142" width="150" height="40" rx="8"/><text class="t n" x="304" y="167">call-intake</text>
+    <rect class="box" x="452" y="142" width="150" height="40" rx="8"/><text class="t n" x="466" y="167">lead-research</text>
+    <rect class="box" x="290" y="192" width="150" height="40" rx="8"/><text class="t n" x="304" y="217">knowledge-base</text>
+    <rect class="box" x="452" y="192" width="150" height="40" rx="8"/><text class="t n" x="466" y="217">prompt-optimizer</text>
+    <rect class="box" x="290" y="242" width="312" height="40" rx="8"/><text class="t n" x="304" y="267">code-reviewer</text>
+  </g>
+  <path class="flow" d="M210 95 C 250 95, 250 112, 288 112"/>
+
+  <!-- supervisor -->
+  <rect x="652" y="92" width="214" height="190" rx="10" fill="#12182a" stroke="#7c6bff" stroke-width="1.5"/>
+  <text class="t k" x="668" y="116" fill="#7c6bff">SUPERVISOR</text>
+  <text class="t n" x="668" y="138">Eight-article codex</text>
+  <text class="t s" x="668" y="158">A1 human authority</text>
+  <text class="t s" x="668" y="175">A2 honesty</text>
+  <text class="t s" x="668" y="192">A4 confirmed recipient</text>
+  <text class="t s" x="668" y="209">… four more</text>
+  <text class="t s" x="668" y="236" fill="#6b7b8d">deterministic rules run</text>
+  <text class="t s" x="668" y="252" fill="#6b7b8d">before the model is asked</text>
+  <text class="t s" x="668" y="270" fill="#6b7b8d">strictest verdict wins</text>
+
+  <path class="gate" d="M604 187 L 650 187"/>
+  <text class="t k" x="604" y="178" fill="#7c6bff">EVERY DECISION</text>
+
+  <!-- verdicts -->
+  <text class="t k" x="34" y="332">THREE VERDICTS · MONOTONIC · max() NEVER min()</text>
+  <rect class="box" x="34" y="344" width="256" height="46" rx="8" stroke="#44c98f"/>
+  <text class="t n" x="50" y="364" fill="#44c98f">APPROVED</text>
+  <text class="t s" x="50" y="381">reaches the outside world</text>
+
+  <rect class="box" x="306" y="344" width="256" height="46" rx="8" stroke="#f6d365"/>
+  <text class="t n" x="322" y="364" fill="#f6d365">HOLD FOR HUMAN</text>
+  <text class="t s" x="322" y="381">waits in the morning brief</text>
+
+  <rect class="box" x="578" y="344" width="288" height="46" rx="8" stroke="#e05561"/>
+  <text class="t n" x="594" y="364" fill="#e05561">BLOCKED</text>
+  <text class="t s" x="594" y="381">never leaves, and says why</text>
+
+  <path class="flow" d="M759 284 L 759 316 L 162 316 L 162 342"/>
+  <path class="edge" d="M759 316 L 434 316 L 434 342"/>
+  <path class="edge" d="M759 316 L 722 316 L 722 342"/>
+
+  <text class="t s" x="34" y="424" fill="#6b7b8d">A held decision cannot be released by a later, more relaxed reviewer. Verdicts combine with max(), so severity only ever ratchets up.</text>
+  <text class="t s" x="34" y="444" fill="#6b7b8d">The console has no route that approves anything — asserted directly by test_no_route_approves_sends_books_or_overrides.</text>
+</svg>

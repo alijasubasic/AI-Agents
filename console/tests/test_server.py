@@ -15,7 +15,7 @@ from http.server import ThreadingHTTPServer
 
 import pytest
 
-from agents.brain import demo as brain_demo
+from agents.supervisor import demo as supervisor_demo
 from console.briefing import build_overlay_state
 from console.chat_demo import build_session
 from console.server import MAX_BODY_BYTES, ROUTES, build_handler
@@ -31,7 +31,7 @@ def settings() -> Settings:
 def console():
     """A running console on a throwaway port."""
     session = build_session(settings())
-    state = build_overlay_state(brain_demo.run(settings()))
+    state = build_overlay_state(supervisor_demo.run(settings()))
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), build_handler(session, lambda: state))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -259,7 +259,7 @@ def dashboard_console():
     from jarvis.diagnostics import measure
 
     session = build_session(settings())
-    state = build_overlay_state(brain_demo.run(settings()))
+    state = build_overlay_state(supervisor_demo.run(settings()))
     app = App(
         session=session,
         overlay=state,

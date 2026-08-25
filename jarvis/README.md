@@ -152,7 +152,7 @@ written against it.
 | Panel | Source of truth |
 |---|---|
 | Communication link | the `ChatSession` — the same one `python -m console.chat_demo` drives |
-| Decisions | the brain's morning brief |
+| Decisions | the supervisor's morning brief |
 | Agent fleet | `registry.py`, joined to this session's tasks |
 | Live sessions | `telemetry` — real transcripts on this machine |
 | Activity | `telemetry` — 30-day heatmap, hour-of-day, model split |

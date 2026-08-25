@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 260" width="900" height="260" role="img" aria-label="Three modes: mock reasoning on fixture data, live reasoning on fixture data, and live reasoning on connected accounts. The dashboard always says which one it is running.">
+  <style>
+    .bg{fill:#0d1117}
+    .t{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    .h{font-size:13px;font-weight:700;letter-spacing:1.6px;fill:#6b7b8d}
+    .n{font-size:14px;font-weight:600;fill:#e0e6ed}
+    .s{font-size:11.5px;fill:#8b9bad}
+    .k{font-size:10px;letter-spacing:1.2px;fill:#6b7b8d}
+    .box{fill:#12182a;stroke:#1f2b3d;stroke-width:1}
+  </style>
+  <rect class="bg" width="900" height="260"/>
+  <text class="t h" x="34" y="34">THREE MODES — AND THE DASHBOARD ALWAYS SAYS WHICH ONE IT IS IN</text>
+
+  <rect class="box" x="34" y="58" width="266" height="146" rx="9" stroke="#44c98f"/>
+  <text class="t k" x="50" y="82" fill="#44c98f">DEFAULT · NO ACCOUNTS</text>
+  <text class="t n" x="50" y="106">AGENT_MODE=mock</text>
+  <text class="t s" x="50" y="130">reasoning:  scripted</text>
+  <text class="t s" x="50" y="150">data:       fixtures</text>
+  <text class="t s" x="50" y="176" fill="#6b7b8d">Proves the orchestration works.</text>
+  <text class="t s" x="50" y="192" fill="#6b7b8d">Free. Runs on a fresh clone.</text>
+
+  <rect class="box" x="316" y="58" width="266" height="146" rx="9" stroke="#f6d365"/>
+  <text class="t k" x="332" y="82" fill="#f6d365">ONE API KEY</text>
+  <text class="t n" x="332" y="106">AGENT_MODE=live</text>
+  <text class="t s" x="332" y="130">reasoning:  a real model</text>
+  <text class="t s" x="332" y="150">data:       still fixtures</text>
+  <text class="t s" x="332" y="176" fill="#6b7b8d">Proves the reasoning works.</text>
+  <text class="t s" x="332" y="192" fill="#6b7b8d">A few cents per request.</text>
+
+  <rect class="box" x="598" y="58" width="268" height="146" rx="9" stroke="#00d4ff"/>
+  <text class="t k" x="614" y="82" fill="#00d4ff">PLUS CONNECTED ACCOUNTS</text>
+  <text class="t n" x="614" y="106">live + Google</text>
+  <text class="t s" x="614" y="130">reasoning:  a real model</text>
+  <text class="t s" x="614" y="150">data:       your mailbox, your calendar</text>
+  <text class="t s" x="614" y="176" fill="#6b7b8d">Where the interesting failures are.</text>
+  <text class="t s" x="614" y="192" fill="#6b7b8d">Read-only first. Sending is opt-in.</text>
+
+  <text class="t s" x="34" y="238" fill="#6b7b8d">Live mode makes the reasoning real. It does not make the data real — that takes a second, separate step, and the dashboard distinguishes them.</text>
+</svg>

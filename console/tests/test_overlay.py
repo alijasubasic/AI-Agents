@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 
-from agents.brain.models import Verdict
+from agents.supervisor.models import Verdict
 from console.models import Channel, OverlayCard, OverlayState, Utterance
 from console.overlay import render_overlay
 

@@ -14,7 +14,7 @@ worth stating.** That version had no POST at all, on the grounds that a console
 which can act is a second path around the codex. The principle was right; the
 rule was too blunt. What actually matters is that nothing reaches the outside
 world unreviewed — and a task submitted here becomes an ordinary `Decision`
-that the brain reviews exactly like one an agent raised itself.
+that the supervisor reviews exactly like one an agent raised itself.
 
 So the invariant is now sharper, and still testable:
 

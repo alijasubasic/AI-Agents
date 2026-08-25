@@ -15,7 +15,7 @@ triage decides what reaches the operator.
 
 from __future__ import annotations
 
-from agents.brain.models import Judgement
+from agents.supervisor.models import Judgement
 from console.chat import RoutingDecision
 from core.llm import MockProvider, text_response
 
@@ -60,7 +60,7 @@ def router_provider(*, model: str = "claude-opus-5") -> MockProvider:
     return MockProvider([text_response(route.model_dump_json()) for route in ROUTES], model=model)
 
 
-def brain_provider(*, count: int = 12, model: str = "claude-opus-5") -> MockProvider:
+def supervisor_provider(*, count: int = 12, model: str = "claude-opus-5") -> MockProvider:
     """A reviewer that sees nothing beyond what the codex already found.
 
     The interesting supervision in this demo is deterministic — the codex

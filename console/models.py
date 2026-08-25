@@ -17,7 +17,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-from agents.brain.models import Verdict
+from agents.supervisor.models import Verdict
 
 
 class Channel(StrEnum):

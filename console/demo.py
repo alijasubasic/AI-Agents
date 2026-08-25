@@ -15,8 +15,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from agents.brain import demo as brain_demo
-from agents.brain.models import DailyReport, Verdict
+from agents.supervisor import demo as supervisor_demo
+from agents.supervisor.models import DailyReport, Verdict
 from console.briefing import build_notes, build_overlay_state, build_utterances
 from console.models import SpokenClip
 from console.overlay import render_overlay
@@ -83,7 +83,7 @@ def run(
 ) -> tuple[DailyReport, MockVoice, ObsidianVault]:
     """Run everything and return what each layer produced."""
     settings = settings or Settings.from_env()
-    report = brain_demo.run(settings)
+    report = supervisor_demo.run(settings)
 
     voice = MockVoice()
     speak_briefing(report, voice)
@@ -101,7 +101,7 @@ def main() -> None:
     vault_path = resolve_vault_path()
     print(f"mode={settings.mode}  voice=mock  vault={vault_path}")
 
-    report = brain_demo.run(settings)
+    report = supervisor_demo.run(settings)
     state = build_overlay_state(report)
 
     # --- Overlay --------------------------------------------------------

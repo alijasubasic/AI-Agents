@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420" role="img" aria-label="The operations sphere: the supervisor at the centre, eight agents around it, outside systems on the rim, with dashed rings marking the ones not yet connected.">
+  <style>
+    .bg{fill:#0a0a14}
+    .t{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    .h{font-size:13px;font-weight:700;letter-spacing:1.6px;fill:#6b7b8d}
+    .ctr{font-size:12px;font-weight:600;fill:#e0e6ed;text-anchor:middle;letter-spacing:1.2px}
+    .sub{font-size:11px;fill:#8b9bad;text-anchor:middle}
+    .s{font-size:11px;fill:#8b9bad}
+    .rev{stroke:#7c6bff;stroke-width:1;stroke-dasharray:2 5;fill:none;opacity:.55}
+    .use{stroke:#6b7b8d;stroke-width:1;fill:none;opacity:.45}
+    .del{stroke:#00d4ff;stroke-width:1.4;fill:none;opacity:.8}
+  </style>
+  <rect class="bg" width="900" height="420"/>
+  <text class="t h" x="34" y="34">THE OPERATIONS SPHERE — EVERY EDGE IS A CALL THAT EXISTS IN THE CODE</text>
+
+  <g transform="translate(276,218)">
+    <circle r="182" fill="rgba(0,212,255,0.02)" stroke="rgba(0,212,255,0.25)" stroke-width="1" stroke-dasharray="3 9"/>
+    <circle r="86" fill="none" stroke="rgba(0,212,255,0.07)"/>
+    <circle r="154" fill="none" stroke="rgba(0,212,255,0.07)"/>
+
+    <path class="rev" d="M0 0 L -62 -60"/>
+    <path class="rev" d="M0 0 L 66 -55"/>
+    <path class="rev" d="M0 0 L -86 12"/>
+    <path class="rev" d="M0 0 L 86 18"/>
+    <path class="rev" d="M0 0 L -52 72"/>
+    <path class="rev" d="M0 0 L 54 70"/>
+    <path class="rev" d="M0 0 L 4 -90"/>
+    <path class="rev" d="M0 0 L -6 94"/>
+
+    <path class="use" d="M66 -55 L 138 -90"/>
+    <path class="use" d="M-62 -60 L -130 -94"/>
+    <path class="use" d="M86 18 L 156 34"/>
+    <path class="use" d="M-86 12 L -154 22"/>
+
+    <path class="del" d="M-52 72 Q 0 110 54 70"/>
+
+    <circle r="34" fill="#7c6bff" opacity=".16"/>
+    <circle r="26" fill="#7c6bff"/>
+    <text class="t ctr" y="4">SUP</text>
+    <text class="t sub" y="54">supervisor</text>
+
+    <circle cx="-62" cy="-60" r="15" fill="#00d4ff"/>
+    <circle cx="66" cy="-55" r="15" fill="#00d4ff"/>
+    <circle cx="-86" cy="12" r="15" fill="#44c98f"/>
+    <circle cx="86" cy="18" r="15" fill="#f6d365"/>
+    <circle cx="-52" cy="72" r="15" fill="#ff6b35"/>
+    <circle cx="54" cy="70" r="15" fill="#4dd0e1"/>
+    <circle cx="4" cy="-90" r="15" fill="#e07be0"/>
+    <circle cx="-6" cy="94" r="15" fill="#e05561"/>
+
+    <circle cx="138" cy="-90" r="10" fill="#8b9bad"/>
+    <circle cx="-130" cy="-94" r="10" fill="#8b9bad"/>
+    <circle cx="156" cy="34" r="10" fill="#8b9bad"/>
+    <circle cx="-154" cy="22" r="10" fill="#8b9bad"/>
+    <g fill="none" stroke="#8b9bad" stroke-dasharray="2 4" opacity=".7">
+      <circle cx="138" cy="-90" r="14"/>
+      <circle cx="-130" cy="-94" r="14"/>
+      <circle cx="156" cy="34" r="14"/>
+      <circle cx="-154" cy="22" r="14"/>
+    </g>
+  </g>
+
+  <text class="t h" x="540" y="86">READING IT</text>
+  <circle cx="556" cy="112" r="9" fill="#7c6bff"/>
+  <text class="t s" x="580" y="117">supervisor — reviews every decision</text>
+  <circle cx="556" cy="144" r="8" fill="#00d4ff"/>
+  <text class="t s" x="580" y="149">agents — run in this process</text>
+  <circle cx="556" cy="176" r="7" fill="#8b9bad"/>
+  <circle cx="556" cy="176" r="11" fill="none" stroke="#8b9bad" stroke-dasharray="2 4"/>
+  <text class="t s" x="580" y="181">outside systems — dashed = not connected</text>
+
+  <path d="M546 208 L 570 208" stroke="#7c6bff" stroke-dasharray="2 5"/>
+  <text class="t s" x="580" y="212">reviews</text>
+  <path d="M546 234 L 570 234" stroke="#00d4ff" stroke-width="1.4"/>
+  <text class="t s" x="580" y="238">typed handoff — costs no model call</text>
+  <path d="M546 260 L 570 260" stroke="#6b7b8d"/>
+  <text class="t s" x="580" y="264">uses an outside system</text>
+
+  <text class="t s" x="540" y="312" fill="#6b7b8d">Position is not drawn, it is derived. Nodes repel, edges</text>
+  <text class="t s" x="540" y="330" fill="#6b7b8d">pull, and each kind is held to its ring — so an agent</text>
+  <text class="t s" x="540" y="348" fill="#6b7b8d">touching three systems drifts toward the rim on its own.</text>
+  <text class="t s" x="540" y="366" fill="#6b7b8d">Add a delegation and the whole picture rearranges.</text>
+  <text class="t s" x="540" y="394" fill="#6b7b8d">Seeded, so it settles the same way on every reload.</text>
+</svg>

@@ -37,7 +37,7 @@ class Speaker(StrEnum):
 
     OPERATOR = "operator"
     AGENT = "agent"
-    BRAIN = "brain"
+    BRAIN = "supervisor"
     SYSTEM = "system"
 
 
@@ -51,10 +51,10 @@ class TaskStatus(StrEnum):
     #: task is still the agent's; it is waiting, not handed over.
     NEEDS_CLARIFICATION = "needs_clarification"
 
-    #: Finished, and the brain cleared the result.
+    #: Finished, and the supervisor cleared the result.
     DONE = "done"
 
-    #: Finished, and the brain held it for a person. The work is no longer the
+    #: Finished, and the supervisor held it for a person. The work is no longer the
     #: agent's.
     ESCALATED = "escalated"
 
@@ -146,7 +146,7 @@ class Task(BaseModel):
     #: What the agent produced, in one or two sentences.
     result: str = ""
 
-    #: The brain's verdict, once the result has been reviewed.
+    #: The supervisor's verdict, once the result has been reviewed.
     verdict: str = ""
     review_reasons: list[str] = Field(default_factory=list)
     decision_id: str | None = None

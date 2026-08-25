@@ -29,6 +29,7 @@ from core.config import Settings
 from core.console import configure_stdout
 from jarvis import capture as capture_module
 from jarvis.diagnostics import Diagnostics, measure
+from jarvis.graph import integration_status
 from jarvis.page import render_dashboard
 from jarvis.panels import Dashboard, build
 from telemetry import load
@@ -65,6 +66,19 @@ class App:
     def telemetry(self) -> Telemetry:
         return load(self.telemetry_root)
 
+    def connected(self) -> dict:
+        """What is actually wired up on this machine.
+
+        Checked per request rather than at startup: connecting Google is
+        something a person does in another window while the dashboard is open,
+        and it should light up on the next poll rather than after a restart.
+        """
+        return integration_status(
+            vault_path=str(self.vault_path) if self.vault_path else None,
+            google_token=google_token_present(),
+            voice_live=os.environ.get("VOICE_MODE", "").strip().lower() == "live",
+        )
+
     def dashboard(self) -> Dashboard:
         return build(
             state=self.overlay,
@@ -74,6 +88,7 @@ class App:
             mode=self.settings.mode,
             model=self.settings.model,
             capture_target=str(self.vault_path) if self.vault_path else "",
+            connected=self.connected(),
         )
 
     def payload(self) -> dict:
@@ -98,6 +113,18 @@ class App:
         return capture_module.capture(build_vault(self.vault_path), title, body)
 
 
+def google_token_present() -> bool:
+    """Whether somebody has completed the Google OAuth flow on this machine.
+
+    A file check, and deliberately no more. Opening the token to inspect its
+    scopes would mean reading a credential to draw a picture, and an expired
+    refresh token looks identical to a working one until a call is made. The
+    graph says "connected"; the first real call says whether it meant it.
+    """
+    configured = os.environ.get("GOOGLE_TOKEN_PATH", "").strip()
+    return bool(configured) and Path(configured).is_file()
+
+
 def resolve_vault(explicit: Path | str | None = None) -> Path:
     """Where captures go.
 
@@ -120,7 +147,7 @@ def build_app(
     telemetry_root: Path | None = None,
 ) -> tuple[App, bool]:
     """The application and whether it got a live session."""
-    from agents.brain import demo as brain_demo
+    from agents.supervisor import demo as supervisor_demo
     from console.briefing import build_overlay_state
 
     settings = settings or Settings.from_env()
@@ -129,7 +156,7 @@ def build_app(
     # The morning brief always comes from the scripted run. It is yesterday's
     # record; regenerating it against the live API on every start would cost
     # money to redraw a panel that is not about today.
-    overlay = build_overlay_state(brain_demo.run(settings.model_copy(update={"mode": "mock"})))
+    overlay = build_overlay_state(supervisor_demo.run(settings.model_copy(update={"mode": "mock"})))
 
     app = App(
         session=session,

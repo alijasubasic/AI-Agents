@@ -69,14 +69,14 @@ def load_all() -> list[tuple[EvalCase, CaseFn]]:
     drift: a case that is not imported does not exist.
     """
     from evals.cases import (  # noqa: F401
-        brain,
         calendar_booking,
         call_intake,
+        code_reviewer,
         email_triage,
-        improver,
         knowledge_base,
         lead_research,
-        self_improving,
+        prompt_optimizer,
+        supervisor,
     )
 
     return list(REGISTRY)

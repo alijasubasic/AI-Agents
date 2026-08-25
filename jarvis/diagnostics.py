@@ -23,7 +23,7 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
-from agents.brain.codex import ARTICLES
+from agents.supervisor.codex import ARTICLES
 from core.config import Settings
 from jarvis.registry import FLEET
 

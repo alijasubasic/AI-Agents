@@ -10,12 +10,12 @@ send the work there — and a request nobody can place becomes a question rather
 than a guess.
 
 **Triaging the questions** is the part worth reading. When an agent asks for
-clarification, the brain looks at each question first and answers the ones the
+clarification, the supervisor looks at each question first and answers the ones the
 codex already settles. The operator is only asked what genuinely needs a
 person. An assistant that interrupts you with a question its own rulebook
 answers is one you learn to ignore.
 
-**Reviewing the result** goes through the same brain and the same codex as
+**Reviewing the result** goes through the same supervisor and the same codex as
 every other decision in this repository. That is what makes the chat safe to
 add: it can create work, and it cannot approve any.
 """
@@ -27,9 +27,9 @@ import uuid
 
 from pydantic import BaseModel, Field
 
-from agents.brain.codex import ARTICLES
-from agents.brain.models import Verdict
-from agents.brain.supervisor import BrainAgent
+from agents.supervisor.agent import SupervisorAgent
+from agents.supervisor.codex import ARTICLES
+from agents.supervisor.models import Verdict
 from console.handlers import TaskHandler, TaskOutcome, to_decision
 from console.tasks import Answer, Conversation, Question, Speaker, Task, TaskStatus
 from core.agent import Agent
@@ -80,7 +80,7 @@ class RoutingDecision(BaseModel):
 
 
 #: Question wording that the codex already answers. Matching on the question
-#: rather than on the task keeps this honest: the brain only speaks up when the
+#: rather than on the task keeps this honest: the supervisor only speaks up when the
 #: agent asked about something the rulebook covers.
 _POLICY_PATTERNS: tuple[tuple[str, str, str], ...] = (
     (
@@ -109,11 +109,11 @@ _POLICY_PATTERNS: tuple[tuple[str, str, str], ...] = (
 )
 
 
-def brain_answer(question: Question) -> tuple[str, str] | None:
+def supervisor_answer(question: Question) -> tuple[str, str] | None:
     """What the codex already says about this question, if anything.
 
     Returns the article and the answer, or None when the question genuinely
-    needs a person. Deterministic on purpose: a brain that *decided* whether to
+    needs a person. Deterministic on purpose: a supervisor that *decided* whether to
     interrupt the operator would interrupt inconsistently.
     """
     haystack = f"{question.text} {question.why}".lower()
@@ -131,7 +131,7 @@ class ChatSession:
         *,
         handlers: list[TaskHandler],
         router_provider: LLMProvider,
-        brain: BrainAgent,
+        supervisor: SupervisorAgent,
         settings: Settings | None = None,
         conversation: Conversation | None = None,
     ) -> None:
@@ -139,7 +139,7 @@ class ChatSession:
             raise ValueError("a chat session needs at least one agent to route to")
 
         self.handlers = {handler.agent: handler for handler in handlers}
-        self.brain = brain
+        self.supervisor = supervisor
         self.settings = settings or Settings.from_env()
         self.conversation = conversation or Conversation(id=f"conv-{uuid.uuid4().hex[:8]}")
 
@@ -269,9 +269,9 @@ class ChatSession:
         return self._review(task, outcome)
 
     def _ask(self, task: Task, outcome: TaskOutcome) -> None:
-        """Put the agent's questions to the brain first, then the operator.
+        """Put the agent's questions to the supervisor first, then the operator.
 
-        Every question is recorded on the task either way. A question the brain
+        Every question is recorded on the task either way. A question the supervisor
         settles is recorded *with its answer*, so the exchange stays visible in
         the transcript and the agent sees the ruling in its next briefing —
         rather than the question quietly never having existed.
@@ -280,7 +280,7 @@ class ChatSession:
 
         for question in outcome.questions:
             task.questions.append(question)
-            settled = brain_answer(question)
+            settled = supervisor_answer(question)
 
             if settled is None:
                 self.conversation.say(
@@ -296,13 +296,13 @@ class ChatSession:
         if task.open_questions:
             task.status = TaskStatus.NEEDS_CLARIFICATION
         elif settled_any:
-            # The brain answered everything the agent asked. Carry on without
+            # The supervisor answered everything the agent asked. Carry on without
             # troubling the operator at all.
             self._advance(task)
 
     def _review(self, task: Task, outcome: TaskOutcome) -> Task:
-        """Send the result through the brain, exactly like any other decision."""
-        review = self.brain.review(to_decision(task, outcome))
+        """Send the result through the supervisor, exactly like any other decision."""
+        review = self.supervisor.review(to_decision(task, outcome))
 
         task.result = outcome.summary
         task.verdict = review.verdict.label

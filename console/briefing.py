@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from agents.brain.models import DailyReport, Review, Verdict
+from agents.supervisor.models import DailyReport, Review, Verdict
 from console.models import (
     Channel,
     OverlayCard,
