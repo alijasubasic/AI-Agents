@@ -14,8 +14,8 @@ from console.chat_demo import build_session
 from core.config import Settings
 from core.console import configure_stdout
 from jarvis.diagnostics import measure
-from jarvis.page import render_dashboard
 from jarvis.panels import Dashboard, build
+from jarvis.ui import render_dashboard
 from telemetry import load
 
 RULE = "=" * 78

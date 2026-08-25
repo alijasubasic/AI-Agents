@@ -21,8 +21,8 @@ from console.vault import MemoryVault, ObsidianVault
 from core.config import Settings
 from jarvis.capture import FOLDER, MAX_BODY, CaptureRefused, build_note, capture
 from jarvis.diagnostics import measure
-from jarvis.page import embed_json, render_dashboard
 from jarvis.panels import analytics_panel, build, fleet_panel, sessions_panel
+from jarvis.ui import embed_json, render_dashboard
 from telemetry.fixtures import demo_telemetry
 from telemetry.models import Telemetry
 
@@ -211,7 +211,15 @@ def test_embed_json_round_trips():
     assert json.loads(embed_json(payload)) == payload
 
 
-def test_the_capture_target_is_escaped_into_the_page(overlay, diagnostics):
+def test_a_hostile_capture_target_never_becomes_markup(overlay, diagnostics):
+    """The capture path is the one value the client interpolates into a
+    sentence rather than rendering as a whole node.
+
+    It reaches the page inside the escaped bootstrap payload and is written
+    with `textContent`, so it can carry angle brackets without them ever being
+    parsed. The earlier version HTML-escaped it on the server, which was both
+    unnecessary and wrong — a path containing `&` displayed as `&amp;`.
+    """
     dashboard = build(
         state=overlay,
         conversation=Conversation(id="test"),
@@ -223,10 +231,17 @@ def test_the_capture_target_is_escaped_into_the_page(overlay, diagnostics):
     page = render_dashboard(dashboard)
 
     assert "<img src=x" not in page
-    assert "&lt;img" in page
+    assert "\\u003cimg" in page, "carried in the payload, angle brackets escaped"
+    assert "&lt;img" not in page, "not HTML-escaped — it is never parsed as HTML"
 
 
-def test_the_page_says_when_no_vault_is_configured(overlay, diagnostics):
+def test_the_client_says_when_no_vault_is_configured(overlay, diagnostics):
+    """The message moved from the server-rendered markup into the client.
+
+    The page template holds no data at all now, so this asserts the sentence
+    exists in the script and that an unconfigured dashboard sends the empty
+    value that triggers it.
+    """
     dashboard = build(
         state=overlay,
         conversation=Conversation(id="test"),
@@ -234,7 +249,9 @@ def test_the_page_says_when_no_vault_is_configured(overlay, diagnostics):
         diagnostics=diagnostics,
         capture_target="",
     )
-    assert "no vault configured" in render_dashboard(dashboard)
+
+    assert dashboard.capture_target == ""
+    assert "No vault configured" in render_dashboard(dashboard)
 
 
 def test_the_whole_dashboard_serialises_to_json(dashboard):

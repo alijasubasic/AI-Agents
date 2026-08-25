@@ -30,8 +30,8 @@ from core.console import configure_stdout
 from jarvis import capture as capture_module
 from jarvis.diagnostics import Diagnostics, measure
 from jarvis.graph import integration_status
-from jarvis.page import render_dashboard
 from jarvis.panels import Dashboard, build
+from jarvis.ui import render_dashboard
 from telemetry import load
 from telemetry.models import Telemetry
 
