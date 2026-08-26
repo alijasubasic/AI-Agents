@@ -52,16 +52,18 @@ without pretending.
 
 ## The fleet
 
-Eight agents. Each is a package with its own README, a runnable demo, its own
+Ten agents. Each is a package with its own README, a runnable demo, its own
 tests, and scored eval cases — including the ones it fails.
 
 | Agent | What it does | Reaches |
 |---|---|---|
-| [**supervisor**](agents/supervisor) | Reviews every decision any agent makes against an eight-article codex, then writes the morning brief | Obsidian, Drive, voice |
+| [**supervisor**](agents/supervisor) | Reviews every decision any agent makes against a ten-article codex, then writes the morning brief | Obsidian, Drive, voice |
 | [**email-triage**](agents/email_triage) | Classifies inbound mail, extracts action items, drafts a reply in a house voice | Gmail, CRM |
 | [**calendar-booking**](agents/calendar_booking) | Finds times across calendars and time zones, respecting working hours rather than averaging them | Google Calendar |
 | [**call-intake**](agents/call_intake) | Turns a call transcript into a verified record — and treats the transcript as data, never as instructions | — |
 | [**lead-research**](agents/lead_research) | Researches a company, cites every fact, and labels every claim it could not source | Web search |
+| [**prospecting**](agents/prospecting) | Finds the businesses in an area, merges the duplicates, and labels every contact detail by where it was published | Google Places, OpenStreetMap, company sites |
+| [**outreach**](agents/outreach) | Writes one first-contact email per business, and sends only what the policy, the supervisor and a person all cleared | SMTP |
 | [**knowledge-base**](agents/knowledge_base) | Answers from a document corpus with a citation per claim, and declines when retrieval brings back nothing separable | — |
 | [**prompt-optimizer**](agents/prompt_optimizer) | Rewrites an agent's prompt against a scored task set, with a holdout that keeps the score honest | — |
 | [**code-reviewer**](agents/code_reviewer) | Reviews this repository and proposes patches it is not allowed to merge | this repo |
@@ -229,6 +231,66 @@ should rely on.
 python -m agents.lead_research.demo
 ```
 
+### [prospecting](agents/prospecting) ✅ — finding the businesses
+
+Searches an area across Google Maps, OpenStreetMap and a directory, merges the
+results into one row per business, and reads each company's own website for the
+name, email address and phone number.
+
+**A contact detail is worth exactly as much as the place it was published.**
+`m.reiter@…` printed in a company's imprint and `s.sailer@…` built from a name
+plus a domain are indistinguishable as strings, and only one of them may be
+written to. So the difference is a field — `CONFIRMED`, `REPORTED`,
+`CONSTRUCTED`, `INVALID` — carried with every address and phone number along
+with the URL it came from. `best_email()` returns only confirmed addresses; the
+outreach policy refuses the rest; codex article A9 blocks them again.
+
+**No map platform returns email addresses.** Google's Places API never has, and
+no field mask produces one — which is why every "verified emails from Google
+Maps" product got them somewhere else. Here they come from the business's own
+imprint, openly, and only from pages `robots.txt` allows. Without that step the
+demo finds 0 addresses for 5 businesses; with it, 3.
+
+**The merge is deterministic and asymmetric.** Three keys — normalised name plus
+postcode, phone in E.164, website domain — unioned transitively, nothing fuzzy.
+A missed merge is a visible duplicate somebody fixes in seconds; a wrong merge
+deletes a real business and nobody ever finds out.
+
+```bash
+python -m agents.prospecting.demo
+make leads WHAT="Dachdecker" WHERE="München"    # the real platforms
+```
+
+### [outreach](agents/outreach) ✅ — writing to them
+
+Drafts one short first-contact email per business, and refuses to send most of
+them.
+
+**Sending needs three independent yesses, and every default is no:** the policy
+found nothing wrong, the brain approved the decision, and a person passed
+`--send`. None can be inferred from the others, so all three are checked at the
+point of sending.
+
+**The model writes the pitch; the code writes the footer.** Who is sending, why
+this business was contacted and which platform found it, and one sentence that
+ends the contact for good — all assembled in
+[`models.py`](agents/outreach/models.py), never by the model, and checked again
+on the assembled text. A model that can rewrite the opt-out line is one that
+will eventually improve it away.
+
+**The model never sees a scraped page**, only the normalised fields of a lead.
+An imprint is third-party text anybody can edit, and feeding it to a model about
+to write in your name is how a stranger dictates what you say.
+
+In the demo, one of five drafts clears every rule. The other four are stopped by
+four different rules — a guessed address, a directory-only address, a
+suppression entry, and an invented project count — none of which is visible in
+the draft itself.
+
+```bash
+python -m agents.outreach.demo
+```
+
 ### [knowledge-base](agents/knowledge_base) ✅
 
 Answers questions from a corpus of customer documents with a citation for every
@@ -350,18 +412,24 @@ another link raised, and the property is checked exhaustively rather than
 promised in a prompt.
 → [ADR 0005](docs/adr/0005-monotonic-supervision.md)
 
-**The codex is executable, not a prompt.** Eight articles in
+**The codex is executable, not a prompt.** Ten articles in
 [`codex.py`](agents/supervisor/codex.py) — human authority, honesty, no unbacked
 commitments, confirmed recipient, data minimisation, fair dealing, cost
-discipline, auditability. Dishonesty and unconfirmed recipients block a
-decision outright; the rest hold it for a person, because most of what they
-catch is a draft needing an edit.
+discipline, auditability, and two that apply only to cold outreach: lawful
+contact and the right to be left alone. Dishonesty and unconfirmed recipients
+block a decision outright; the rest hold it for a person, because most of what
+they catch is a draft needing an edit.
 
 **The chains close.** `lead-research` labels a revenue figure `UNSOURCED`; an
 outreach draft repeats it to the prospect as fact; **A2 blocks the send**.
 `call-intake` establishes a caller never spoke the address the model extracted;
-a follow-up is drafted to it anyway; **A4 blocks the send**. Neither specialist
-did anything wrong, and neither could have caught it alone.
+a follow-up is drafted to it anyway; **A4 blocks the send**. `prospecting`
+labels an address `CONSTRUCTED` because a pattern produced it; `outreach` writes
+a perfectly good email to it; **A9 blocks the send**. And the best lead in the
+campaign — three platforms, a named managing director, a confirmed personal
+address — asked in 2025 not to be contacted, so **A10 blocks it** no matter how
+good the email is. No specialist did anything wrong, and none could have caught
+it alone.
 
 **The model earns its place once.** A scheduling reply breaches no article, and
 the reviewer holds it anyway: the draft names a specific time before anyone
@@ -373,6 +441,20 @@ a person today — as Markdown and as a spreadsheet (`Summary`, `Decisions`,
 
 ```bash
 make brief    # or: python -m agents.supervisor.demo
+```
+
+**The brain also steers the outbound side.**
+[`campaign.py`](agents/supervisor/campaign.py) has it drive `prospecting` over an
+area, hand every business it found to `outreach` for a draft, review each of
+those against the codex, and send exactly the ones that survived — which, in
+dry-run mode, is none of them. The two specialists never talk to each other:
+prospecting does not know outreach exists, outreach cannot search for anything,
+and neither can send. The brain's approval is the only route from finding a
+business to writing to it.
+
+```bash
+python -m agents.supervisor.campaign_demo             # fixtures, nothing sent
+make leads WHAT="Dachdecker" WHERE="München" OUTREACH=1
 ```
 
 ---
@@ -470,10 +552,12 @@ and measures neither.
 | code reviewer | 26 | 26 | 100% | 3 |
 | knowledge-base | 13 | 13 | 100% | 3 |
 | lead-research | 12 | 12 | 100% | 4 |
+| outreach | 12 | 12 | 100% | 3 |
 | prompt-optimizer | 12 | 12 | 100% | 3 |
-| **overall** | **115** | **115** | **100%** | **25** |
+| prospecting | 14 | 14 | 100% | 2 |
+| **overall** | **141** | **141** | **100%** | **30** |
 
-**100% is not the interesting number. 25 known gaps is.** A `KNOWN_GAP` case
+**100% is not the interesting number. 30 known gaps is.** A `KNOWN_GAP` case
 documents a real limitation — it is kept, it fails, and it fails visibly.
 Deleting it would make the score look better and the agent no safer, so gaps
 are excluded from the headline rather than allowed to create pressure to remove
@@ -514,6 +598,15 @@ that both speak pydantic has no reason to be re-parsed by a model.
 not oversight.
 → [ADR 0005](docs/adr/0005-monotonic-supervision.md)
 
+**A contact detail carries where it was published.** A guessed address and a
+published one are identical as strings, so the difference is a field rather than
+context somebody is expected to remember.
+→ [ADR 0006](docs/adr/0006-contact-provenance.md)
+
+**Three independent yesses before a cold email.** The policy, the brain, and a
+person — each defaulting to no, all three checked at the point of sending.
+→ [ADR 0007](docs/adr/0007-three-yesses-before-an-email.md)
+
 **Tool schemas come from the code.** The `@tool` decorator derives the JSON
 schema the model sees from the function's type hints and docstring, so the
 schema cannot drift from the implementation.
@@ -551,12 +644,25 @@ make demo        # every demo, offline, no API key
 make jarvis      # the operations dashboard on 127.0.0.1:8756
 make telemetry   # this machine's own Claude Code history, in the terminal
 make brief       # run every agent and write the morning brief
-make test        # 797 tests
+make test        # 951 tests
 make lint        # ruff check + format --check
-make eval        # 140 scored cases across eight agents
+make eval        # 171 scored cases across ten agents
 make review      # the code reviewer, on this repository
 make check       # everything CI runs, in the same order
 ```
+
+Finding real businesses needs no key at all — OpenStreetMap is free, and Google
+Maps joins in if `GOOGLE_MAPS_API_KEY` is set:
+
+```bash
+make leads WHAT="Dachdecker" WHERE="München"              # search, CSV to leads/
+make leads WHAT="Dachdecker" WHERE="München" OUTREACH=1   # + draft and review
+make leads WHAT="Dachdecker" WHERE="München" OUTREACH=1 SEND=1
+```
+
+`SEND=1` is the only thing in this repository that turns dry run off, and it
+additionally needs a complete sender identity and SMTP credentials — a
+first-contact email that cannot say who sent it does not get sent.
 
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). `make` is a
 convenience, not a dependency — every target is one command you can run

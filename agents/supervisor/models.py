@@ -71,6 +71,8 @@ class DecisionKind(StrEnum):
     BOOK_MEETING = "book_meeting"
     RECORD_CALL = "record_call"
     PUBLISH_RESEARCH = "publish_research"
+    COLLECT_LEADS = "collect_leads"
+    COLD_OUTREACH = "cold_outreach"
 
     @property
     def is_outbound(self) -> bool:
@@ -79,7 +81,19 @@ class DecisionKind(StrEnum):
             DecisionKind.SEND_EMAIL,
             DecisionKind.PROPOSE_TIMES,
             DecisionKind.BOOK_MEETING,
+            DecisionKind.COLD_OUTREACH,
         }
+
+    @property
+    def is_cold(self) -> bool:
+        """Whether this writes to someone who never wrote to us.
+
+        A separate question from `is_outbound`, and the reason the codex has
+        articles A9 and A10 at all: replying to a customer's email and writing
+        to a business that has never heard of us are different acts, with
+        different things that have to be true before either may happen.
+        """
+        return self is DecisionKind.COLD_OUTREACH
 
 
 class Severity(IntEnum):
@@ -106,6 +120,17 @@ class Decision(BaseModel):
     #: Whether the recipient's contact details were actually confirmed. None
     #: means the question does not arise for this kind of decision.
     recipient_verified: bool | None = None
+
+    #: Whether this recipient has already asked not to be contacted. Nothing
+    #: overrides this, which is why it is a field of its own rather than one
+    #: more sentence in `escalation_reasons`.
+    recipient_opted_out: bool = False
+
+    #: Where the recipient's address came from, as something a person can open:
+    #: the imprint page, the directory entry, the listing. Empty on a cold
+    #: outreach decision means nobody can answer "why did you write to me",
+    #: which article A9 treats as reason enough not to.
+    contact_source: str = ""
 
     #: What the specialist agent already concluded. The supervisor may not undo this.
     requires_human: bool = False

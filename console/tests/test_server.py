@@ -21,6 +21,7 @@ from console.chat_demo import build_session
 from console.server import MAX_BODY_BYTES, ROUTES, build_handler
 from console.tasks import TaskStatus
 from core.config import Settings
+from jarvis.registry import FLEET
 
 
 def settings() -> Settings:
@@ -320,7 +321,10 @@ def test_the_dashboard_endpoint_returns_every_panel(dashboard_console):
 
     assert status == 200
     assert set(payload) >= {"fleet", "sessions", "analytics", "checks", "turns", "questions"}
-    assert len(payload["fleet"]) == 8
+    # Derived rather than hardcoded: a fleet size in a test is a number that
+    # goes stale the next time an agent is added, and fails for that instead
+    # of for a broken endpoint.
+    assert len(payload["fleet"]) == len(FLEET)
 
 
 def test_the_dashboard_endpoint_is_absent_when_none_is_wired_in(console):

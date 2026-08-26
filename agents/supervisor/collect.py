@@ -15,6 +15,8 @@ from agents.calendar_booking.models import BookingResult, MeetingProposal
 from agents.call_intake.models import IntakeResult
 from agents.email_triage.models import Email, TriageResult
 from agents.lead_research.models import ResearchResult
+from agents.outreach.models import OutreachResult
+from agents.prospecting.models import ContactStatus, ProspectingResult
 from agents.supervisor.models import Decision, DecisionKind
 
 
@@ -147,6 +149,73 @@ def outreach_from_research(
         requires_human=False,
         cost_usd=0.0,
         trace_ref=result.company,
+    )
+
+
+def from_prospecting(result: ProspectingResult) -> Decision:
+    """One area search.
+
+    Internal: finding a business is not an act anyone outside the company sees,
+    so nothing here can go wrong in a way a recipient experiences. It is still
+    reviewed, for two reasons. The guessed addresses travel with it as
+    `unverified_claims`, ready for A2 if any of them later turn up in a message.
+    And a search that cost more than it should have is exactly the kind of thing
+    that is invisible until somebody totals up the month.
+    """
+    guesses = [
+        contact.value
+        for lead in result.leads
+        for contact in lead.contacts
+        if contact.status is ContactStatus.CONSTRUCTED
+    ]
+
+    return Decision(
+        id=f"dec-prospecting-{result.area.what.lower().replace(' ', '-')}-"
+        f"{result.area.where.lower().replace(' ', '-')}",
+        agent="prospecting",
+        kind=DecisionKind.COLLECT_LEADS,
+        subject=f"Recherche: {result.area.describe()}",
+        summary=(
+            f"{len(result.leads)} Betriebe aus {result.listings_seen} Einträgen "
+            f"({result.duplicates_merged} Dubletten zusammengeführt), "
+            f"{len(result.contactable)} mit bestätigter E-Mail"
+        ),
+        unverified_claims=guesses,
+        requires_human=False,
+        cost_usd=result.cost_usd,
+        trace_ref=result.area.describe(),
+    )
+
+
+def from_outreach(result: OutreachResult) -> Decision:
+    """One drafted first-contact email.
+
+    Where the prospecting chain closes. The address's status was decided by
+    whoever published it — or did not — long before this draft existed, and it
+    travels here as `recipient_verified`. A draft to a guessed address is
+    blocked by A9 no matter how good the draft is, and every claim the policy
+    could not back is carried along for A2 to find in the text.
+    """
+    return Decision(
+        id=f"dec-outreach-{result.lead_id}",
+        agent="outreach",
+        kind=DecisionKind.COLD_OUTREACH,
+        subject=f"Erstkontakt: {result.company}",
+        summary=result.email.personalisation or result.email.subject,
+        outbound_text=result.message,
+        recipient=result.recipient,
+        recipient_verified=(
+            None
+            if result.recipient_status is None
+            else result.recipient_status is ContactStatus.CONFIRMED
+        ),
+        contact_source=result.source_url,
+        recipient_opted_out=result.suppressed,
+        requires_human=result.requires_human,
+        escalation_reasons=result.blockers,
+        unverified_claims=result.unbacked_claims,
+        cost_usd=result.cost_usd,
+        trace_ref=result.lead_id,
     )
 
 

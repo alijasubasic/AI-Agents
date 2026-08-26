@@ -53,11 +53,19 @@ can quietly erode. Nothing in [`codex.py`](codex.py) asks a model anything.
 | **A6** | Fair dealing | hold | Pressure selling, manufactured urgency |
 | **A7** | Cost discipline | hold | One decision over the per-decision ceiling |
 | **A8** | Auditability | hold | No trace reference to reconstruct it from |
+| **A9** | Lawful contact | **block** | Cold-mailing an address the business never published |
+| **A10** | Right to be left alone | **block** | An opt-out ignored, or no way to opt out at all |
 
 The split between *block* and *hold* is deliberate. Dishonesty and unconfirmed
 recipients destroy the decision. Everything else holds it for a person, because
 most of what those articles catch is a draft that needs an edit rather than
 something that must not happen.
+
+A9 and A10 apply only to `COLD_OUTREACH` — writing to somebody who never wrote
+to us. Replying to a customer is a different act with different requirements,
+and A4 already covers the recipient question there. Both block rather than hold,
+because a first contact that fails one of them cannot be repaired by editing it
+after it has arrived.
 
 Findings accumulate rather than short-circuiting: a reviewer should see
 everything wrong with a decision at once, not the first thing that happened to
@@ -96,14 +104,17 @@ flowchart TB
         E["email-triage"]
         C["call-intake"] -->|"typed handoff"| B["calendar-booking"]
         L["lead-research"]
+        P["prospecting"] -->|"leads"| O["outreach"]
     end
 
     E --> D["Decision envelope<br/><i>collect.py</i>"]
     C --> D
     B --> D
     L --> D
+    P --> D
+    O --> D
 
-    D --> Codex["Codex<br/><i>8 articles, deterministic</i>"]
+    D --> Codex["Codex<br/><i>10 articles, deterministic</i>"]
     D --> Model["Reviewing model<br/><i>what rules cannot see</i>"]
     Codex --> Max{"max()"}
     Model --> Max
@@ -123,6 +134,31 @@ drafted to it anyway. **A4 blocks the send.**
 **Pressure selling.** A draft guarantees a discount and manufactures a
 deadline. A3 and A6 both fire — and it is *held*, not blocked, because the
 problem is the wording rather than the intent.
+
+**A guessed address.** `prospecting` labels an address `CONSTRUCTED` because a
+pattern built it from a name; `outreach` writes a perfectly good email to it, in
+the absence of anything better. **A9 blocks the send.**
+
+**The best lead in the campaign.** Three platforms, a named managing director, a
+confirmed personal address — and a request in 2025 not to be contacted. The
+email is faultless. **A10 blocks it anyway.**
+
+## Running a campaign
+
+[`campaign.py`](campaign.py) is the supervisor steering the outbound pair the way
+`pipeline.py` steers the inbound ones: search an area with `prospecting`, hand
+each business to `outreach` for a draft, review every decision, and send exactly
+the ones that survived — which in dry-run mode is none of them.
+
+The two specialists never talk to each other. Prospecting does not know outreach
+exists, outreach cannot search for anything, and neither can send. The supervisor's
+approval is the only route from finding a business to writing to it.
+→ [ADR 0007](../../docs/adr/0007-three-yesses-before-an-email.md)
+
+```bash
+python -m agents.supervisor.campaign_demo                      # fixtures, nothing sent
+make leads WHAT="Dachdecker" WHERE="München" OUTREACH=1   # the real platforms
+```
 
 ## The morning brief
 

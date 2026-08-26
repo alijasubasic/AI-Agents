@@ -49,5 +49,11 @@ briefs/
 # --- Telemetry cache (counts from local Claude Code transcripts) ---
 .cache/
 
+# --- Lead exports and the do-not-contact list ---
+# Both hold other people's contact details. Neither belongs in a repository,
+# and the suppression list is per-deployment rather than per-clone.
+leads/
+suppression*.jsonl
+
 # --- Obsidian vault written by the console demo ---
 vault/
