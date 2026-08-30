@@ -6,11 +6,13 @@ model upgrade can quietly erode. Nothing in this module asks a model anything.
 Each article is a function over a `Decision`, and each returns a finding with
 the article it breached and the verdict that follows.
 
-The articles fall into two groups. A1 and A2 are about honesty and authority
+The articles fall into three groups. A1 and A2 are about honesty and authority
 and produce hard outcomes. A3 to A8 are about competence and market conduct;
 they hold work for a person rather than destroying it, because most of what
 they catch is a draft needing an edit rather than a decision that must not
-happen.
+happen. A9 and A10 apply only to cold outreach — writing to someone who never
+wrote to us — and they block, because a first contact that fails one of them
+cannot be fixed by editing it after it has arrived.
 """
 
 from __future__ import annotations
@@ -49,6 +51,17 @@ _PRESSURE_PATTERNS: tuple[tuple[str, str], ...] = (
 _EMAIL_RE = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b")
 _PHONE_RE = re.compile(r"(?<!\w)(?:\+?\d[\d\s().-]{8,}\d)(?!\w)")
 
+#: Wording that gives a cold recipient a way to stop hearing from us. Matched
+#: on the message that would actually go out, not on an intention to include it.
+_OPT_OUT_RE = re.compile(
+    r"\babmeld\w*\b|\bkeine weitere\w*\b|\bwiderspr\w*\b|\baustragen\b"
+    r"|\bunsubscribe\b|\bopt[- ]?out\b",
+    re.IGNORECASE,
+)
+
+#: Something a recipient can use to find out who wrote to them.
+_IDENTIFICATION_RE = re.compile(r"impressum|imprint|https?://", re.IGNORECASE)
+
 ARTICLES: dict[str, str] = {
     "A1": "Human authority",
     "A2": "Honesty",
@@ -58,6 +71,8 @@ ARTICLES: dict[str, str] = {
     "A6": "Fair dealing",
     "A7": "Cost discipline",
     "A8": "Auditability",
+    "A9": "Lawful contact",
+    "A10": "Right to be left alone",
 }
 
 
@@ -250,6 +265,97 @@ def article_8_auditability(decision: Decision) -> list[CodexFinding]:
     ]
 
 
+def article_9_lawful_contact(decision: Decision) -> list[CodexFinding]:
+    """Nobody is cold-mailed at an address they did not publish themselves.
+
+    Only cold outreach is checked. Replying to a customer who wrote to us is a
+    different act with a different answer, and A4 already covers the recipient
+    question there.
+
+    Two things have to be true, and both are facts the prospecting agent either
+    established or did not: the address is one the business published, and the
+    place it published it can be opened by a person. An address the system
+    guessed from a name fails the first. An address with no recorded source
+    fails the second — the recipient's fair question is "where did you get
+    this", and "somewhere in a batch job last Tuesday" is not an answer.
+    """
+    if not decision.kind.is_cold:
+        return []
+
+    findings = []
+    if decision.recipient_verified is not True:
+        findings.append(
+            _finding(
+                "A9",
+                Severity.BREACH,
+                f"{decision.recipient or 'the recipient'} never published this address "
+                f"themselves; it is inferred or second-hand",
+                Verdict.BLOCKED,
+            )
+        )
+    if not decision.contact_source:
+        findings.append(
+            _finding(
+                "A9",
+                Severity.BREACH,
+                "no source recorded for the address, so nobody can answer 'where did you get this'",
+                Verdict.BLOCKED,
+            )
+        )
+    return findings
+
+
+def article_10_right_to_be_left_alone(decision: Decision) -> list[CodexFinding]:
+    """Somebody who asked to be left alone is left alone, and everyone else is
+    told how to ask.
+
+    The identification and opt-out sentences are one line each and are assembled
+    in code rather than written by a model. They are checked here anyway,
+    because the value of a guarantee is what happens after the code that was
+    supposed to hold it up gets refactored by somebody in a hurry.
+
+    An existing opt-out is checked first and independently of the text: a
+    perfectly formed message to somebody who asked us to stop is still a message
+    to somebody who asked us to stop.
+    """
+    if not decision.kind.is_cold:
+        return []
+
+    findings = []
+    if decision.recipient_opted_out:
+        findings.append(
+            _finding(
+                "A10",
+                Severity.BREACH,
+                f"{decision.recipient or 'this recipient'} has asked not to be contacted",
+                Verdict.BLOCKED,
+            )
+        )
+
+    if not decision.outbound_text:
+        return findings
+
+    if not _OPT_OUT_RE.search(decision.outbound_text):
+        findings.append(
+            _finding(
+                "A10",
+                Severity.BREACH,
+                "no way for the recipient to stop hearing from us",
+                Verdict.BLOCKED,
+            )
+        )
+    if not _IDENTIFICATION_RE.search(decision.outbound_text):
+        findings.append(
+            _finding(
+                "A10",
+                Severity.BREACH,
+                "the recipient cannot tell who wrote to them",
+                Verdict.BLOCKED,
+            )
+        )
+    return findings
+
+
 CHECKS = (
     article_1_human_authority,
     article_2_honesty,
@@ -259,6 +365,8 @@ CHECKS = (
     article_6_fair_dealing,
     article_7_cost_discipline,
     article_8_auditability,
+    article_9_lawful_contact,
+    article_10_right_to_be_left_alone,
 )
 
 

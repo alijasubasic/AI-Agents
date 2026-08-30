@@ -75,7 +75,9 @@ def load_all() -> list[tuple[EvalCase, CaseFn]]:
         email_triage,
         knowledge_base,
         lead_research,
+        outreach,
         prompt_optimizer,
+        prospecting,
         supervisor,
     )
 

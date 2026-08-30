@@ -17,6 +17,8 @@ from agents.supervisor.codex import (
     article_6_fair_dealing,
     article_7_cost_discipline,
     article_8_auditability,
+    article_9_lawful_contact,
+    article_10_right_to_be_left_alone,
     codex_verdict,
 )
 from agents.supervisor.models import Decision, DecisionKind, Severity, Verdict
@@ -211,6 +213,90 @@ def test_a_decision_with_no_trace_is_held():
     findings = article_8_auditability(decision(trace_ref=None))
     assert findings[0].verdict is Verdict.HOLD_FOR_HUMAN
     assert findings[0].severity is Severity.NOTE
+
+
+# --- A9 lawful contact --------------------------------------------------
+
+
+def cold(**overrides) -> Decision:
+    """A clean cold-outreach decision: a published address, a lawful footer."""
+    base = {
+        "kind": DecisionKind.COLD_OUTREACH,
+        "subject": "Erstkontakt: Reiter Bedachungen GmbH",
+        "agent": "outreach",
+        "recipient": "info@reiter-bedachungen.example",
+        "recipient_verified": True,
+        "contact_source": "https://reiter-bedachungen.example/impressum",
+        "outbound_text": (
+            "Guten Tag,\n\nwir liefern Sicherungssysteme.\n\n"
+            "Sturmfest Systeme GmbH\n"
+            "Impressum: https://sturmfest-systeme.example/impressum\n"
+            "Antworten Sie mit „Abmelden“, dann schreiben wir nicht wieder."
+        ),
+    }
+    return decision(**{**base, **overrides})
+
+
+def test_a_cold_email_to_a_published_address_breaches_nothing():
+    assert apply_codex(cold()) == []
+
+
+def test_cold_mailing_a_guessed_address_is_blocked():
+    findings = article_9_lawful_contact(cold(recipient_verified=False))
+
+    assert findings[0].verdict is Verdict.BLOCKED
+    assert findings[0].severity is Severity.BREACH
+
+
+def test_an_address_with_no_recorded_source_is_blocked():
+    findings = article_9_lawful_contact(cold(contact_source=""))
+
+    assert any("where did you get this" in f.detail for f in findings)
+    assert findings[0].verdict is Verdict.BLOCKED
+
+
+def test_replying_to_a_customer_is_not_cold_outreach():
+    """A1 to A8 govern a reply; A9 has nothing to say about one."""
+    assert article_9_lawful_contact(decision(kind=DecisionKind.SEND_EMAIL)) == []
+
+
+# --- A10 right to be left alone -----------------------------------------
+
+
+def test_writing_to_somebody_who_opted_out_is_blocked():
+    findings = article_10_right_to_be_left_alone(cold(recipient_opted_out=True))
+
+    assert findings[0].verdict is Verdict.BLOCKED
+    assert "asked not to be contacted" in findings[0].detail
+
+
+def test_an_opt_out_is_honoured_even_when_the_message_is_perfect():
+    """The message clears every other rule. It still may not go."""
+    findings = apply_codex(cold(recipient_opted_out=True))
+
+    assert codex_verdict(findings) is Verdict.BLOCKED
+
+
+def test_a_cold_email_with_no_way_out_is_blocked():
+    findings = article_10_right_to_be_left_alone(
+        cold(outbound_text="Guten Tag, wir liefern Sicherungssysteme. https://sturmfest.example")
+    )
+
+    assert any("stop hearing from us" in f.detail for f in findings)
+
+
+def test_a_cold_email_that_hides_its_sender_is_blocked():
+    findings = article_10_right_to_be_left_alone(
+        cold(outbound_text="Guten Tag, Sie können sich jederzeit abmelden.")
+    )
+
+    assert any("who wrote to them" in f.detail for f in findings)
+
+
+def test_an_opted_out_recipient_is_caught_with_no_text_at_all():
+    findings = article_10_right_to_be_left_alone(cold(outbound_text="", recipient_opted_out=True))
+
+    assert len(findings) == 1
 
 
 # --- Combination --------------------------------------------------------

@@ -22,6 +22,7 @@ from core.config import Settings
 from jarvis.capture import FOLDER, MAX_BODY, CaptureRefused, build_note, capture
 from jarvis.diagnostics import measure
 from jarvis.panels import analytics_panel, build, fleet_panel, sessions_panel
+from jarvis.registry import FLEET
 from jarvis.ui import embed_json, render_dashboard
 from telemetry.fixtures import demo_telemetry
 from telemetry.models import Telemetry
@@ -62,7 +63,7 @@ def dashboard(overlay, diagnostics):
 def test_the_fleet_shows_every_agent_even_with_no_tasks():
     members = fleet_panel(Conversation(id="test"))
 
-    assert len(members) == 8
+    assert len(members) == len(FLEET)
     assert all(member.tone == "dim" for member in members)
     assert {"lead-research", "knowledge-base", "calendar-booking"} == {
         member.name for member in members if member.reachable

@@ -71,8 +71,8 @@ FLEET: list[AgentCard] = [
         package="supervisor",
         colour="#7c6bff",
         blurb=(
-            "Supervises every other agent. Re-checks each decision against an "
-            "eight-article codex and writes the morning brief."
+            "Supervises every other agent. Re-checks each decision against a "
+            "ten-article codex and writes the morning brief."
         ),
         skills=["supervision", "codex", "morning brief"],
         demo="agents.supervisor.demo",
@@ -126,6 +126,31 @@ FLEET: list[AgentCard] = [
         skills=["search", "cite", "flag unverified"],
         reachable=True,
         demo="agents.lead_research.demo",
+    ),
+    AgentCard(
+        name="prospecting",
+        title="Prospecting",
+        package="prospecting",
+        colour="#3fa9f5",
+        blurb=(
+            "Finds the businesses in an area across three platforms and reads "
+            "their own sites for a contact — every detail labelled by where it "
+            "was published."
+        ),
+        skills=["search an area", "merge duplicates", "extract contacts"],
+        demo="agents.prospecting.demo",
+    ),
+    AgentCard(
+        name="outreach",
+        title="Outreach",
+        package="outreach",
+        colour="#ffa24d",
+        blurb=(
+            "Writes one first-contact email per business, and refuses to send "
+            "it unless the policy, the supervisor and a person all agree."
+        ),
+        skills=["draft", "check consent", "hold for review"],
+        demo="agents.outreach.demo",
     ),
     AgentCard(
         name="knowledge-base",
